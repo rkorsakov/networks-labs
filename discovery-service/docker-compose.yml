@@ -1,0 +1,46 @@
+services:
+  discovery-service-1:
+    build: .
+    container_name: discovery-1
+    networks:
+      discovery-network:
+        ipv4_address: 172.28.0.10
+    environment:
+      - NODE_ID=1
+      - DOCKER_IP=172.28.0.10
+    cap_add:
+      - NET_ADMIN
+    command: ["./discovery-service", "239.255.255.250"]
+
+  discovery-service-2:
+    build: .
+    container_name: discovery-2
+    networks:
+      discovery-network:
+        ipv4_address: 172.28.0.11
+    environment:
+      - NODE_ID=2
+      - DOCKER_IP=172.28.0.11
+    cap_add:
+      - NET_ADMIN
+    command: ["./discovery-service", "239.255.255.250"]
+
+  discovery-service-3:
+    build: .
+    container_name: discovery-3
+    networks:
+      discovery-network:
+        ipv4_address: 172.28.0.12
+    environment:
+      - NODE_ID=3
+      - DOCKER_IP=172.28.0.12
+    cap_add:
+      - NET_ADMIN
+    command: ["./discovery-service", "239.255.255.250"]
+
+networks:
+  discovery-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
