@@ -8,14 +8,15 @@ import (
 )
 
 type GameLogic struct {
-	Config        *proto.GameConfig
-	field         *Field
-	state         *proto.GameState
-	players       map[int32]*proto.GamePlayer
-	snakes        map[int32]*proto.GameState_Snake
-	foods         []*proto.GameState_Coord
-	rnd           *rand.Rand
-	pendingSteers map[int32]proto.Direction
+	Config          *proto.GameConfig
+	field           *Field
+	state           *proto.GameState
+	players         map[int32]*proto.GamePlayer
+	snakes          map[int32]*proto.GameState_Snake
+	foods           []*proto.GameState_Coord
+	rnd             *rand.Rand
+	pendingSteers   map[int32]proto.Direction
+	playerIDCounter int32
 }
 
 func NewGameLogic(Config *proto.GameConfig) *GameLogic {
@@ -29,7 +30,7 @@ func NewGameLogic(Config *proto.GameConfig) *GameLogic {
 		rnd:           rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0)),
 		pendingSteers: make(map[int32]proto.Direction),
 	}
-	testPlayer := NewPlayer("TestPlayer", proto.PlayerType_HUMAN, proto.NodeRole_MASTER)
+	testPlayer := gl.NewPlayer("TestPlayer", proto.PlayerType_HUMAN, proto.NodeRole_MASTER)
 	gl.AddPlayer(testPlayer)
 	gl.generateInitialFood()
 	gl.placeSnakes()
@@ -65,7 +66,7 @@ func (gl *GameLogic) SteerSnake(playerID int32, direction proto.Direction) error
 		return fmt.Errorf("snake for player %d not found", playerID)
 	}
 	if snake.State != proto.GameState_Snake_ALIVE {
-		return fmt.Errorf("snake is not alive")
+		return fmt.Errorf("snake is ZOMBIE")
 	}
 	gl.pendingSteers[playerID] = direction
 	return nil
@@ -75,10 +76,9 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	if snake.State != proto.GameState_Snake_ALIVE {
 		return
 	}
-	oldHead := snake.Points[0]
 	newHead := &proto.GameState_Coord{
-		X: oldHead.X,
-		Y: oldHead.Y,
+		X: snake.Points[0].X,
+		Y: snake.Points[0].Y,
 	}
 	switch snake.HeadDirection {
 	case proto.Direction_UP:
@@ -108,13 +108,6 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	}
 
 	snake.Points = newPoints
-}
-
-func (gl *GameLogic) isReverseDirection(current, new proto.Direction) bool {
-	return (current == proto.Direction_UP && new == proto.Direction_DOWN) ||
-		(current == proto.Direction_DOWN && new == proto.Direction_UP) ||
-		(current == proto.Direction_LEFT && new == proto.Direction_RIGHT) ||
-		(current == proto.Direction_RIGHT && new == proto.Direction_LEFT)
 }
 
 func (gl *GameLogic) checkCollisions() {
@@ -179,81 +172,10 @@ func (gl *GameLogic) updateFood() {
 	}
 }
 
-func (gl *GameLogic) isFoodOnSnake(coord *proto.GameState_Coord) bool {
-	for _, snake := range gl.snakes {
-		for _, point := range snake.Points {
-			if point.X == coord.X && point.Y == coord.Y {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func (gl *GameLogic) generateInitialFood() {
 	for i := 0; i < int(gl.Config.FoodStatic); i++ {
 		gl.foods = append(gl.foods, gl.generateFoodPosition())
 	}
-}
-
-func (gl *GameLogic) placeSnakes() {
-	for _, player := range gl.players {
-		gl.placeSnake(player)
-	}
-}
-
-func (gl *GameLogic) placeSnake(player *proto.GamePlayer) {
-	for attempt := 0; attempt < 100; attempt++ {
-		head := gl.field.GetRandomPosition(gl.rnd)
-		if gl.isFoodAtPosition(head) {
-			continue
-		}
-		directions := []proto.Direction{
-			proto.Direction_UP,
-			proto.Direction_DOWN,
-			proto.Direction_LEFT,
-			proto.Direction_RIGHT,
-		}
-		gl.rnd.Shuffle(len(directions), func(i, j int) {
-			directions[i], directions[j] = directions[j], directions[i]
-		})
-		var tail *proto.GameState_Coord
-		var selectedDirection proto.Direction
-		found := false
-		for _, dir := range directions {
-			tail = gl.getTailPosition(head, dir)
-			tail = gl.field.WrapPosition(tail)
-			if !gl.isFoodAtPosition(tail) {
-				selectedDirection = dir
-				found = true
-				break
-			}
-		}
-		if !found {
-			continue
-		}
-		head = gl.field.WrapPosition(head)
-		headDirection := gl.getOppositeDirection(selectedDirection)
-		snake := &proto.GameState_Snake{
-			PlayerId:      player.Id,
-			Points:        []*proto.GameState_Coord{head, tail},
-			State:         proto.GameState_Snake_ALIVE,
-			HeadDirection: headDirection,
-		}
-		gl.snakes[player.Id] = snake
-		return
-	}
-	head := gl.field.GetRandomPosition(gl.rnd)
-	head = gl.field.WrapPosition(head)
-	tail := gl.getTailPosition(head, proto.Direction_UP)
-	tail = gl.field.WrapPosition(tail)
-	snake := &proto.GameState_Snake{
-		PlayerId:      player.Id,
-		Points:        []*proto.GameState_Coord{head, tail},
-		State:         proto.GameState_Snake_ALIVE,
-		HeadDirection: proto.Direction_DOWN,
-	}
-	gl.snakes[player.Id] = snake
 }
 
 func (gl *GameLogic) getTailPosition(head *proto.GameState_Coord, direction proto.Direction) *proto.GameState_Coord {
@@ -284,36 +206,11 @@ func (gl *GameLogic) getOppositeDirection(dir proto.Direction) proto.Direction {
 	return proto.Direction_UP
 }
 
-func (gl *GameLogic) isFoodAtPosition(coord *proto.GameState_Coord) bool {
-	for _, food := range gl.foods {
-		if food.X == coord.X && food.Y == coord.Y {
-			return true
-		}
-	}
-	return false
-}
-
-func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
-	gl.players[player.Id] = player
-}
-
-func (gl *GameLogic) GetPlayer(playerID int32) *proto.GamePlayer {
-	return gl.players[playerID]
-}
-
-func (gl *GameLogic) GetPlayers() map[int32]*proto.GamePlayer {
-	return gl.players
-}
-
 func (gl *GameLogic) generateFoodPosition() *proto.GameState_Coord {
 	return gl.field.GetRandomPosition(gl.rnd)
 
 }
 
-func (gl *GameLogic) GetField() *Field {
-	return gl.field
+func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
+	gl.players[player.Id] = player
 }
-
-func (gl *GameLogic) GetFoods() []*proto.GameState_Coord { return gl.foods }
-
-func (gl *GameLogic) GetSnakes() map[int32]*proto.GameState_Snake { return gl.snakes }

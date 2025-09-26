@@ -5,16 +5,14 @@ import (
 	"sync/atomic"
 )
 
-var playerIDCounter int32 = 0
-
-func GeneratePlayerID() int32 {
-	return atomic.AddInt32(&playerIDCounter, 1)
+func (gl *GameLogic) GeneratePlayerID() int32 {
+	return atomic.AddInt32(&gl.playerIDCounter, 1)
 }
 
-func NewPlayer(name string, playerType proto.PlayerType, role proto.NodeRole) *proto.GamePlayer {
+func (gl *GameLogic) NewPlayer(name string, playerType proto.PlayerType, role proto.NodeRole) *proto.GamePlayer {
 	return &proto.GamePlayer{
 		Name:  name,
-		Id:    GeneratePlayerID(),
+		Id:    gl.GeneratePlayerID(),
 		Role:  role,
 		Type:  playerType,
 		Score: 0,
