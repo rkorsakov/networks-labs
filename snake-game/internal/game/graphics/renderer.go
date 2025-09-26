@@ -14,21 +14,30 @@ type Renderer struct {
 func NewRenderer(logic *logic.GameLogic) *Renderer {
 	return &Renderer{
 		logic:    logic,
-		cellSize: 15,
+		cellSize: 20,
 	}
 }
 
 func (r *Renderer) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{R: 0x1a, G: 0x1f, B: 0x2d, A: 0xff})
 	r.drawGrid(screen)
-	r.drawCell(screen, 14, 88, color.RGBA{R: 0x1d, G: 0x48, B: 0x15, A: 0xff})
+	r.drawFood(screen)
 }
 
 func (r *Renderer) drawGrid(screen *ebiten.Image) {
 	field := r.logic.GetField()
-	for y := 0; y < field.Height; y++ {
-		for x := 0; x < field.Width; x++ {
+	for y := 0; int32(y) < field.Height; y++ {
+		for x := 0; int32(x) < field.Width; x++ {
 			r.drawCell(screen, x, y, color.RGBA{R: 0x2d, G: 0x32, B: 0x45, A: 0xff})
+		}
+	}
+}
+
+func (r *Renderer) drawFood(screen *ebiten.Image) {
+	foods := r.logic.Foods
+	for _, food := range foods {
+		if food != nil {
+			r.drawCell(screen, int(food.X), int(food.Y), color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff})
 		}
 	}
 }

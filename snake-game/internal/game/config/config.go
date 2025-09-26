@@ -1,18 +1,12 @@
 package config
 
-import "github.com/ilyakaznacheev/cleanenv"
+import (
+	"github.com/ilyakaznacheev/cleanenv"
+	proto "snake-game/internal/proto/gen"
+)
 
-type Config struct {
-	Field FieldConfig
-}
-
-type FieldConfig struct {
-	Width  int `yaml:"width" default:"15"`
-	Height int `yaml:"height" default:"15"`
-}
-
-func LoadConfig(path string) (*Config, error) {
-	var cfg Config
+func LoadConfig(path string) (*proto.GameConfig, error) {
+	var cfg proto.GameConfig
 	err := cleanenv.ReadConfig(path, &cfg)
 	if err != nil {
 		return nil, err

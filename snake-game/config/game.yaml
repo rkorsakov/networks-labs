@@ -1,3 +1,4 @@
-field:
-  width: 15
-  height: 15
+width: 15
+height: 15
+foodstatic: 5
+statedelayms: 400

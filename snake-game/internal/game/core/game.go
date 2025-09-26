@@ -3,9 +3,9 @@ package core
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"log"
-	"snake-game/internal/game/config"
 	"snake-game/internal/game/graphics"
 	"snake-game/internal/game/logic"
+	proto "snake-game/internal/proto/gen"
 )
 
 type Game struct {
@@ -13,7 +13,7 @@ type Game struct {
 	Renderer *graphics.Renderer
 }
 
-func NewGame(cfg *config.Config) *Game {
+func NewGame(cfg *proto.GameConfig) *Game {
 	gameLogic := logic.NewGameLogic(cfg)
 	renderer := graphics.NewRenderer(gameLogic)
 
