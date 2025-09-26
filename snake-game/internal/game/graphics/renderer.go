@@ -22,6 +22,7 @@ func (r *Renderer) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{R: 0x1a, G: 0x1f, B: 0x2d, A: 0xff})
 	r.drawGrid(screen)
 	r.drawFood(screen)
+	r.drawSnakes(screen)
 }
 
 func (r *Renderer) drawGrid(screen *ebiten.Image) {
@@ -34,10 +35,24 @@ func (r *Renderer) drawGrid(screen *ebiten.Image) {
 }
 
 func (r *Renderer) drawFood(screen *ebiten.Image) {
-	foods := r.logic.Foods
+	foods := r.logic.GetFoods()
 	for _, food := range foods {
 		if food != nil {
 			r.drawCell(screen, int(food.X), int(food.Y), color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff})
+		}
+	}
+}
+
+func (r *Renderer) drawSnakes(screen *ebiten.Image) {
+	snakes := r.logic.GetSnakes()
+	for _, snake := range snakes {
+		points := snake.GetPoints()
+		for i, point := range points {
+			if i == 0 {
+				r.drawCell(screen, int(point.X), int(point.Y), color.RGBA{R: 0x11, G: 0xff, B: 0x00, A: 0x1f})
+			} else {
+				r.drawCell(screen, int(point.X), int(point.Y), color.RGBA{R: 0xaf, G: 0x10, B: 0x67, A: 0x1f})
+			}
 		}
 	}
 }

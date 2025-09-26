@@ -48,10 +48,10 @@ func (f *Field) GetCenter() *proto.GameState_Coord {
 	}
 }
 
-func (f *Field) GetRandomPosition(rng *rand.Rand) *proto.GameState_Coord {
+func (f *Field) GetRandomPosition(rnd *rand.Rand) *proto.GameState_Coord {
 	return &proto.GameState_Coord{
-		X: int32(rng.IntN(int(f.Width))),
-		Y: int32(rng.IntN(int(f.Height))),
+		X: int32(rnd.IntN(int(f.Width))),
+		Y: int32(rnd.IntN(int(f.Height))),
 	}
 }
 
