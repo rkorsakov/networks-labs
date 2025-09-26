@@ -16,7 +16,6 @@ type GameLogic struct {
 	foods         []*proto.GameState_Coord
 	rnd           *rand.Rand
 	pendingSteers map[int32]proto.Direction
-	stateOrder    int64
 }
 
 func NewGameLogic(Config *proto.GameConfig) *GameLogic {
@@ -29,7 +28,6 @@ func NewGameLogic(Config *proto.GameConfig) *GameLogic {
 		foods:         make([]*proto.GameState_Coord, 0),
 		rnd:           rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0)),
 		pendingSteers: make(map[int32]proto.Direction),
-		stateOrder:    0,
 	}
 	testPlayer := NewPlayer("TestPlayer", proto.PlayerType_HUMAN, proto.NodeRole_MASTER)
 	gl.AddPlayer(testPlayer)
@@ -48,15 +46,10 @@ func (gl *GameLogic) Update() error {
 		}
 	}
 	gl.pendingSteers = make(map[int32]proto.Direction)
-
 	gl.moveSnakes()
-
 	gl.checkCollisions()
-
 	gl.updateFood()
-
-	gl.stateOrder++
-
+	gl.state.StateOrder++
 	return nil
 }
 
@@ -205,11 +198,11 @@ func (gl *GameLogic) generateInitialFood() {
 
 func (gl *GameLogic) placeSnakes() {
 	for _, player := range gl.players {
-		gl.placeSnakeForPlayer(player)
+		gl.placeSnake(player)
 	}
 }
 
-func (gl *GameLogic) placeSnakeForPlayer(player *proto.GamePlayer) {
+func (gl *GameLogic) placeSnake(player *proto.GamePlayer) {
 	for attempt := 0; attempt < 100; attempt++ {
 		head := gl.field.GetRandomPosition(gl.rnd)
 		if gl.isFoodAtPosition(head) {
