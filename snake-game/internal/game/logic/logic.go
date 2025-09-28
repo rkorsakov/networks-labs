@@ -7,12 +7,6 @@ import (
 	"time"
 )
 
-//еще тоже надо с rnd решить нужен или нет
-
-//еще нужно в graphics сделать чтобы Layout или че там крч норм окно было чтобы
-
-//потом надо сделать отдельное в graphics типо gui и нужен еще guicontroller наверное или чет такое
-
 type GameLogic struct {
 	Config          *proto.GameConfig
 	field           *Field
