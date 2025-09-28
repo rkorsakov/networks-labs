@@ -115,39 +115,48 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	snake.Points = newPoints
 }
 
+type coordKey struct {
+	X, Y int32
+}
+
 func (gl *GameLogic) checkCollisions() {
 	collisions := make(map[int32]bool)
-	occupiedCoords := make([]*proto.GameState_Coord, 0)
-	for _, snake := range gl.snakes {
-		if len(snake.Points) > 1 {
-			occupiedCoords = append(occupiedCoords, snake.Points[1:]...)
-		}
-	}
+	headCoords := make(map[coordKey]int32)
+	bodyCoords := make(map[coordKey]struct{})
+
 	for playerID, snake := range gl.snakes {
 		if snake.State != proto.GameState_Snake_ALIVE {
 			continue
 		}
 		head := snake.Points[0]
-		for _, bodyCoord := range occupiedCoords {
-			if head.X == bodyCoord.X && head.Y == bodyCoord.Y {
+		headKey := coordKey{X: head.X, Y: head.Y}
+		headCoords[headKey] = playerID
+
+		for i := 1; i < len(snake.Points); i++ {
+			point := snake.Points[i]
+			bodyKey := coordKey{X: point.X, Y: point.Y}
+			bodyCoords[bodyKey] = struct{}{}
+		}
+	}
+
+	for headKey, playerID := range headCoords {
+		if _, exists := bodyCoords[headKey]; exists {
+			collisions[playerID] = true
+			continue
+		}
+
+		for otherHeadKey, otherPlayerID := range headCoords {
+			if playerID == otherPlayerID {
+				continue
+			}
+			if headKey.X == otherHeadKey.X && headKey.Y == otherHeadKey.Y {
 				collisions[playerID] = true
+				collisions[otherPlayerID] = true
 				break
 			}
 		}
-		if !collisions[playerID] {
-			for otherPlayerID, otherSnake := range gl.snakes {
-				if otherPlayerID == playerID || otherSnake.State != proto.GameState_Snake_ALIVE {
-					continue
-				}
-				otherHead := otherSnake.Points[0]
-				if head.X == otherHead.X && head.Y == otherHead.Y {
-					collisions[playerID] = true
-					collisions[otherPlayerID] = true
-					break
-				}
-			}
-		}
 	}
+
 	for playerID := range collisions {
 		if snake, exists := gl.snakes[playerID]; exists {
 			for _, point := range snake.Points {
