@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+//еще тоже надо с rnd решить нужен или нет
+
+//еще нужно в graphics сделать чтобы Layout или че там крч норм окно было чтобы
+
+//потом надо сделать отдельное в graphics типо gui и нужен еще guicontroller наверное или чет такое
+
 type GameLogic struct {
 	Config          *proto.GameConfig
 	field           *Field
@@ -103,7 +109,6 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	}
 
 	if !ateFood && len(newPoints) > 2 {
-
 		newPoints = newPoints[:len(newPoints)-1]
 	}
 
@@ -111,36 +116,38 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 }
 
 func (gl *GameLogic) checkCollisions() {
-	occupiedCoords := make(map[*proto.GameState_Coord]int32)
-	for playerID, snake := range gl.snakes {
-		for _, point := range snake.Points {
-			key := proto.GameState_Coord{X: point.X, Y: point.Y}
-			if _, exists := occupiedCoords[&key]; !exists {
-				occupiedCoords[&key] = playerID
-			}
+	collisions := make(map[int32]bool)
+	occupiedCoords := make([]*proto.GameState_Coord, 0)
+	for _, snake := range gl.snakes {
+		if len(snake.Points) > 1 {
+			occupiedCoords = append(occupiedCoords, snake.Points[1:]...)
 		}
 	}
-	collisions := make(map[int32]bool)
 	for playerID, snake := range gl.snakes {
 		if snake.State != proto.GameState_Snake_ALIVE {
 			continue
 		}
 		head := snake.Points[0]
-		key := proto.GameState_Coord{X: head.X, Y: head.Y}
-		if occupyingPlayerID, occupied := occupiedCoords[&key]; occupied {
-			isTailOfSameSnake := false
-			if len(snake.Points) > 1 {
-				tail := snake.Points[len(snake.Points)-1]
-				if tail.X == head.X && tail.Y == head.Y {
-					isTailOfSameSnake = true
-				}
-			}
-			if !isTailOfSameSnake || occupyingPlayerID != playerID {
+		for _, bodyCoord := range occupiedCoords {
+			if head.X == bodyCoord.X && head.Y == bodyCoord.Y {
 				collisions[playerID] = true
+				break
+			}
+		}
+		if !collisions[playerID] {
+			for otherPlayerID, otherSnake := range gl.snakes {
+				if otherPlayerID == playerID || otherSnake.State != proto.GameState_Snake_ALIVE {
+					continue
+				}
+				otherHead := otherSnake.Points[0]
+				if head.X == otherHead.X && head.Y == otherHead.Y {
+					collisions[playerID] = true
+					collisions[otherPlayerID] = true
+					break
+				}
 			}
 		}
 	}
-
 	for playerID := range collisions {
 		if snake, exists := gl.snakes[playerID]; exists {
 			for _, point := range snake.Points {
