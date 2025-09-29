@@ -6,6 +6,7 @@ import (
 	"log"
 	"snake-game/internal/game/graphics"
 	"snake-game/internal/game/logic"
+	"snake-game/internal/game/ui"
 	proto "snake-game/internal/proto/gen"
 	"time"
 )
@@ -15,6 +16,7 @@ type Game struct {
 	renderer   *graphics.Renderer
 	lastUpdate time.Time
 	playerID   int32
+	ui         *ui.ConsoleUI
 }
 
 func NewGame(cfg *proto.GameConfig) *Game {
@@ -30,6 +32,7 @@ func NewGame(cfg *proto.GameConfig) *Game {
 		renderer:   renderer,
 		lastUpdate: time.Now(),
 		playerID:   playerID,
+		ui:         ui.NewConsoleUI(),
 	}
 }
 
@@ -81,6 +84,7 @@ func (g *Game) Layout(width, height int) (int, int) {
 func (g *Game) Start() {
 	ebiten.SetWindowSize(800, 600)
 	ebiten.SetWindowTitle("Snake Game")
+	go func() { g.ui.ShowMainMenu() }()
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}

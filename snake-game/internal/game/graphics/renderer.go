@@ -2,6 +2,7 @@ package graphics
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"golang.org/x/image/colornames"
 	"image/color"
 	"snake-game/internal/game/logic"
 )
@@ -38,7 +39,7 @@ func (r *Renderer) drawFood(screen *ebiten.Image) {
 	foods := r.logic.GetFoods()
 	for _, food := range foods {
 		if food != nil {
-			r.drawCell(screen, int(food.X), int(food.Y), color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff})
+			r.drawCell(screen, int(food.X), int(food.Y), colornames.Red)
 		}
 	}
 }
@@ -49,9 +50,9 @@ func (r *Renderer) drawSnakes(screen *ebiten.Image) {
 		points := snake.GetPoints()
 		for i, point := range points {
 			if i == 0 {
-				r.drawCell(screen, int(point.X), int(point.Y), color.RGBA{R: 0x11, G: 0xff, B: 0x00, A: 0x1f})
+				r.drawCell(screen, int(point.X), int(point.Y), colornames.Green)
 			} else {
-				r.drawCell(screen, int(point.X), int(point.Y), color.RGBA{R: 0xaf, G: 0x10, B: 0x67, A: 0x1f})
+				r.drawCell(screen, int(point.X), int(point.Y), colornames.Hotpink)
 			}
 		}
 	}
