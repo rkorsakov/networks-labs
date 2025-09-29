@@ -11,7 +11,7 @@ type GameLogic struct {
 	Config          *proto.GameConfig
 	field           *Field
 	state           *proto.GameState
-	players         map[int32]*proto.GamePlayer
+	players         *proto.GamePlayers
 	snakes          map[int32]*proto.GameState_Snake
 	foods           []*proto.GameState_Coord
 	rnd             *rand.Rand
@@ -23,18 +23,19 @@ func NewGameLogic(Config *proto.GameConfig) *GameLogic {
 	gl := &GameLogic{
 		Config:        Config,
 		field:         NewField(Config.Width, Config.Height),
-		players:       make(map[int32]*proto.GamePlayer),
 		snakes:        make(map[int32]*proto.GameState_Snake),
 		state:         &proto.GameState{StateOrder: 0},
 		foods:         make([]*proto.GameState_Coord, 0),
 		rnd:           rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0)),
 		pendingSteers: make(map[int32]proto.Direction),
+		players:       &proto.GamePlayers{},
 	}
-	testPlayer := gl.NewPlayer("TestPlayer", proto.PlayerType_HUMAN, proto.NodeRole_MASTER)
-	gl.AddPlayer(testPlayer)
+	return gl
+}
+
+func (gl *GameLogic) Init() {
 	gl.generateInitialFood()
 	gl.placeSnakes()
-	return gl
 }
 
 func (gl *GameLogic) Update() error {
@@ -222,5 +223,5 @@ func (gl *GameLogic) generateFoodPosition() *proto.GameState_Coord {
 }
 
 func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
-	gl.players[player.Id] = player
+	gl.players.Players = append(gl.players.Players, player)
 }

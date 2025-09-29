@@ -6,6 +6,7 @@ import (
 	"os"
 	proto "snake-game/internal/proto/gen"
 	"strconv"
+	"strings"
 )
 
 type ConsoleUI struct {
@@ -48,7 +49,7 @@ func (ui *ConsoleUI) ShowGameList(games []*proto.GameAnnouncement) (int, bool) {
 	}
 	fmt.Println("\n=== AVAILABLE GAMES ===")
 	for i, game := range games {
-		fmt.Printf("%d. Game (Players: %d)\n", i+1, len(game.Players.Players))
+		fmt.Printf("%d. %s (Players: %d)\n", i+1, game.GameName, len(game.Players.Players))
 		fmt.Printf("   Field: %dx%d, Food: %d\n",
 			game.Config.Width, game.Config.Height, game.Config.FoodStatic)
 	}
@@ -60,6 +61,25 @@ func (ui *ConsoleUI) ShowGameList(games []*proto.GameAnnouncement) (int, bool) {
 		return 0, true
 	}
 	return choice - 1, false
+}
+
+func (ui *ConsoleUI) ReadGameName() string {
+	fmt.Print("Enter game name: ")
+	if ui.scanner.Scan() {
+		return strings.TrimSpace(ui.scanner.Text())
+	}
+	return "Default Game"
+}
+
+func (ui *ConsoleUI) ReadPlayerName() string {
+	fmt.Print("Enter your nickname: ")
+	if ui.scanner.Scan() {
+		name := strings.TrimSpace(ui.scanner.Text())
+		if name != "" {
+			return name
+		}
+	}
+	return "Player"
 }
 
 func (ui *ConsoleUI) ShowConnectionInfo(role proto.NodeRole) {
@@ -77,18 +97,15 @@ func (ui *ConsoleUI) ShowConnectionInfo(role proto.NodeRole) {
 	fmt.Printf("Connected as %s. Starting game...\n", roleStr)
 }
 
-func (ui *ConsoleUI) ShowErrorMessage(message string) {
-	fmt.Printf("Error: %s\n", message)
-}
-
-func (ui *ConsoleUI) ShowInfoMessage(message string) {
-	fmt.Println(message)
+func (ui *ConsoleUI) PrintGameInfo(game *proto.GameAnnouncement) {
+	fmt.Println("========GAMES========")
+	fmt.Printf("GameName: %s\n", game.GameName)
 }
 
 func (ui *ConsoleUI) readIntInput(min, max int) int {
 	for {
 		if ui.scanner.Scan() {
-			input := ui.scanner.Text()
+			input := strings.TrimSpace(ui.scanner.Text())
 			value, err := strconv.Atoi(input)
 			if err == nil && value >= min && value <= max {
 				return value

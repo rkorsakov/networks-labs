@@ -67,11 +67,15 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
 func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
-func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
+}
 
 func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
-func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
+	game := msg.GetAnnouncement().GetGames()[0]
+	m.ui.ShowGameList([]*prt.GameAnnouncement{game})
+}
 
 func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {}
 

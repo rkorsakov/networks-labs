@@ -3,7 +3,7 @@ package logic
 import proto "snake-game/internal/proto/gen"
 
 func (gl *GameLogic) placeSnakes() {
-	for _, player := range gl.players {
+	for _, player := range gl.players.Players {
 		gl.placeSnake(player)
 	}
 }

@@ -1,22 +1,32 @@
 package network
 
 import (
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
-	proto "snake-game/internal/proto/gen"
+	"snake-game/internal/game/ui"
+	prt "snake-game/internal/proto/gen"
+)
+
+const (
+	multicastAddr = "239.192.0.4:9192"
 )
 
 type Manager struct {
 	unicastConn   *net.UDPConn
 	multicastConn *net.UDPConn
-	role          proto.NodeRole
+	role          prt.NodeRole
 	msgSeq        int64
+	gameAnnounce  *prt.GameAnnouncement
+	ui            *ui.ConsoleUI
 }
 
-func NewNetworkManager() *Manager {
+func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *Manager {
 	return &Manager{
-		role:   proto.NodeRole_NORMAL,
-		msgSeq: 1,
+		role:         role,
+		msgSeq:       1,
+		gameAnnounce: gameAnnounce,
+		ui:           ui.NewConsoleUI(),
 	}
 }
 
@@ -46,7 +56,7 @@ func (m *Manager) setupUnicastSocket() error {
 }
 
 func (m *Manager) setupMulticastSocket() error {
-	groupAddr, err := net.ResolveUDPAddr("udp", "239.192.0.4:9192")
+	groupAddr, err := net.ResolveUDPAddr("udp", multicastAddr)
 	if err != nil {
 		return err
 	}
@@ -69,4 +79,37 @@ func (m *Manager) listenForMessages() {
 		}
 		go m.handleMessage(buf[:n], addr)
 	}
+}
+
+func (m *Manager) sendAnnouncement() {
+	if m.role != prt.NodeRole_MASTER {
+		return
+	}
+
+	announcementMsg := &prt.GameMessage_AnnouncementMsg{
+		Games: []*prt.GameAnnouncement{m.gameAnnounce},
+	}
+
+	msg := &prt.GameMessage{
+		MsgSeq: m.msgSeq,
+		Type: &prt.GameMessage_Announcement{
+			Announcement: announcementMsg,
+		},
+	}
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling message: %v", err)
+		return
+	}
+
+	groupAddr, _ := net.ResolveUDPAddr("udp", "239.192.0.4:9192")
+	_, err = m.multicastConn.WriteToUDP(data, groupAddr)
+	if err != nil {
+		log.Printf("Error sending announcement: %v", err)
+		return
+	}
+
+	log.Printf("Game announcement sent (seq: %d)", m.msgSeq)
+	m.msgSeq++
 }
