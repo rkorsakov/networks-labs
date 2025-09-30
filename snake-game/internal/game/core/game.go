@@ -87,28 +87,23 @@ func (g *Game) Start() {
 	ebiten.SetWindowSize(800, 600)
 	ebiten.SetWindowTitle("Snake Game")
 
-	go func() {
-		for {
-			mo := g.ui.ShowMainMenu()
-			switch mo {
-			case ui.StartNewGame:
-				g.startNewGame()
-			case ui.JoinGame:
-				g.joinGame()
-			case ui.ShowGames:
-				g.showGames()
-			case ui.Exit:
-				fmt.Println("Goodbye!")
-				os.Exit(0)
-			default:
-				fmt.Println("Invalid option")
-			}
+	for {
+		mo := g.ui.ShowMainMenu()
+		switch mo {
+		case ui.StartNewGame:
+			g.startNewGame()
+		case ui.JoinGame:
+			g.joinGame()
+		case ui.ShowGames:
+			g.showGames()
+		case ui.Exit:
+			fmt.Println("Goodbye!")
+			os.Exit(0)
+		default:
+			fmt.Println("Invalid option")
 		}
-	}()
-
-	if err := ebiten.RunGame(g); err != nil {
-		log.Fatal(err)
 	}
+
 }
 
 func (g *Game) startNewGame() {
@@ -128,6 +123,9 @@ func (g *Game) startNewGame() {
 	g.networkMgr.SetGameAnnouncementListener(g)
 	err := g.networkMgr.Start()
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
 }
