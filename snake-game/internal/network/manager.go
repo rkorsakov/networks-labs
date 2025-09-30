@@ -23,6 +23,7 @@ type Manager struct {
 	ui             *ui.ConsoleUI
 	announceTicker *time.Ticker
 	gameListener   interfaces.GameAnnouncementListener
+	localPort      int
 }
 
 func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *Manager {
