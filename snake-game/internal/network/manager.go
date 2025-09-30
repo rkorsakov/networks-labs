@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
@@ -37,6 +36,10 @@ func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *M
 
 func (m *Manager) SetGameAnnouncementListener(listener interfaces.GameAnnouncementListener) {
 	m.gameListener = listener
+}
+
+func (m *Manager) GetRole() prt.NodeRole {
+	return m.role
 }
 
 func (m *Manager) Start() error {
@@ -87,7 +90,6 @@ func (m *Manager) setupMulticastSocket() error {
 		return err
 	}
 	m.multicastConn = conn
-	fmt.Printf("%p\n", m.multicastConn)
 	log.Printf("Multicast socket joined group %s", groupAddr)
 	return nil
 }
@@ -137,14 +139,23 @@ func (m *Manager) sendAnnouncement() {
 		log.Printf("Error marshaling message: %v", err)
 		return
 	}
-
 	groupAddr, _ := net.ResolveUDPAddr("udp", multicastAddr)
 	_, err = m.multicastConn.WriteToUDP(data, groupAddr)
 	if err != nil {
 		log.Printf("Error sending announcement: %v", err)
 		return
 	}
-
-	log.Printf("Game announcement sent (seq: %d)", m.msgSeq)
 	m.msgSeq++
+}
+
+func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnouncement) {
+	m.role = role
+	m.gameAnnounce = announcement
+
+	if role == prt.NodeRole_MASTER {
+		m.startAnnouncementBroadcast()
+	} else if m.announceTicker != nil {
+		m.announceTicker.Stop()
+		m.announceTicker = nil
+	}
 }
