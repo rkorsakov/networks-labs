@@ -5,6 +5,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"log"
 	"os"
+	"snake-game/internal/game/config"
 	"snake-game/internal/game/graphics"
 	"snake-game/internal/game/logic"
 	"snake-game/internal/game/ui"
@@ -22,12 +23,8 @@ type Game struct {
 	networkMgr *network.Manager
 }
 
-func NewGame(cfg *proto.GameConfig) *Game {
-	gameLogic := logic.NewGameLogic(cfg)
-	renderer := graphics.NewRenderer(gameLogic)
+func NewGame() *Game {
 	return &Game{
-		logic:      gameLogic,
-		renderer:   renderer,
 		lastUpdate: time.Now(),
 		ui:         ui.NewConsoleUI(),
 	}
@@ -103,10 +100,19 @@ func (g *Game) Start() {
 			fmt.Println("Invalid option")
 		}
 	}
-
 }
 
 func (g *Game) startNewGame() {
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		log.Print("CONFIG_PATH env variable not set")
+	}
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	g.logic = logic.NewGameLogic(cfg)
+	g.renderer = graphics.NewRenderer(g.logic)
 	gameName := g.ui.ReadGameName()
 	playerName := g.ui.ReadPlayerName()
 	fmt.Printf("Creating game '%s' for player '%s'\n", gameName, playerName)
@@ -121,7 +127,7 @@ func (g *Game) startNewGame() {
 	g.logic.Init()
 	g.networkMgr = network.NewNetworkManager(proto.NodeRole_MASTER, gameAnnounce)
 	g.networkMgr.SetGameAnnouncementListener(g)
-	err := g.networkMgr.Start()
+	err = g.networkMgr.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
