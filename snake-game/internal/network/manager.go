@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
@@ -46,6 +47,7 @@ func (m *Manager) Start() error {
 		return err
 	}
 	go m.listenForMessages()
+	go m.listenForMulticast()
 	if m.role == prt.NodeRole_MASTER {
 		m.startAnnouncementBroadcast()
 	}
@@ -85,6 +87,7 @@ func (m *Manager) setupMulticastSocket() error {
 		return err
 	}
 	m.multicastConn = conn
+	fmt.Printf("%p\n", m.multicastConn)
 	log.Printf("Multicast socket joined group %s", groupAddr)
 	return nil
 }
@@ -93,6 +96,18 @@ func (m *Manager) listenForMessages() {
 	buf := make([]byte, 4096)
 	for {
 		n, addr, err := m.unicastConn.ReadFromUDP(buf)
+		if err != nil {
+			log.Printf("Error reading from UDP: %v", err)
+			continue
+		}
+		go m.handleMessage(buf[:n], addr)
+	}
+}
+
+func (m *Manager) listenForMulticast() {
+	buf := make([]byte, 4096)
+	for {
+		n, addr, err := m.multicastConn.ReadFromUDP(buf)
 		if err != nil {
 			log.Printf("Error reading from UDP: %v", err)
 			continue

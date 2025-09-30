@@ -7,9 +7,6 @@ import (
 	prt "snake-game/internal/proto/gen"
 )
 
-type GameMessage struct {
-}
-
 func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 	var msg prt.GameMessage
 	if err := proto.Unmarshal(data, &msg); err != nil {
