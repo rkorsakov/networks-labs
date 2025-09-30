@@ -36,7 +36,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 
 	case msg.GetAnnouncement() != nil:
 		log.Println("Got ANNOUNCEMENT message")
-		m.handleAnnouncement(&msg, addr)
+		m.handleAnnouncement(&msg)
 
 	case msg.GetJoin() != nil:
 		log.Println("Got JOIN message")
@@ -72,9 +72,11 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 
 func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
-func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
-	game := msg.GetAnnouncement().GetGames()[0]
-	m.ui.ShowGameList([]*prt.GameAnnouncement{game})
+func (m *Manager) handleAnnouncement(msg *prt.GameMessage) {
+	games := msg.GetAnnouncement().GetGames()
+	if m.gameListener != nil {
+		m.gameListener.OnGameAnnouncement(games)
+	}
 }
 
 func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {}

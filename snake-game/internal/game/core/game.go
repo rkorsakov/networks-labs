@@ -19,6 +19,7 @@ type Game struct {
 	lastUpdate time.Time
 	ui         *ui.ConsoleUI
 	games      []*proto.GameAnnouncement
+	networkMgr *network.Manager
 }
 
 func NewGame(cfg *proto.GameConfig) *Game {
@@ -30,6 +31,11 @@ func NewGame(cfg *proto.GameConfig) *Game {
 		lastUpdate: time.Now(),
 		ui:         ui.NewConsoleUI(),
 	}
+}
+
+func (g *Game) OnGameAnnouncement(games []*proto.GameAnnouncement) {
+	g.games = games
+	log.Printf("Updated game list: %d games available", len(games))
 }
 
 func (g *Game) Update() error {
@@ -82,35 +88,21 @@ func (g *Game) Start() {
 	ebiten.SetWindowTitle("Snake Game")
 
 	go func() {
-		mo := g.ui.ShowMainMenu()
-		switch mo {
-		case ui.StartNewGame:
-			gameName := g.ui.ReadGameName()
-			playerName := g.ui.ReadPlayerName()
-			fmt.Printf("Creating game '%s' for player '%s'\n", gameName, playerName)
-			g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_MASTER))
-			game := proto.GameAnnouncement{
-				Config:   g.logic.Config,
-				Players:  g.logic.GetPlayers(),
-				GameName: gameName,
-				CanJoin:  true,
+		for {
+			mo := g.ui.ShowMainMenu()
+			switch mo {
+			case ui.StartNewGame:
+				g.startNewGame()
+			case ui.JoinGame:
+				g.joinGame()
+			case ui.ShowGames:
+				g.showGames()
+			case ui.Exit:
+				fmt.Println("Goodbye!")
+				os.Exit(0)
+			default:
+				fmt.Println("Invalid option")
 			}
-			g.logic.Init()
-			manager := network.NewNetworkManager(proto.NodeRole_MASTER, &game)
-			err := manager.Start()
-			if err != nil {
-				log.Fatal(err)
-			}
-		case ui.JoinGame:
-			// TODO: реализовать присоединение к игре
-			fmt.Println("Join game functionality not implemented yet")
-		case ui.ShowGames:
-			g.ui.ShowGameList(g.games)
-		case ui.Exit:
-			fmt.Println("Goodbye!")
-			os.Exit(0)
-		default:
-			fmt.Println("Invalid option")
 		}
 	}()
 
@@ -119,6 +111,42 @@ func (g *Game) Start() {
 	}
 }
 
-func (g *Game) AddGame(game *proto.GameAnnouncement) {
-	g.games = append(g.games, game)
+func (g *Game) startNewGame() {
+	gameName := g.ui.ReadGameName()
+	playerName := g.ui.ReadPlayerName()
+	fmt.Printf("Creating game '%s' for player '%s'\n", gameName, playerName)
+
+	g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_MASTER))
+	gameAnnounce := &proto.GameAnnouncement{
+		Config:   g.logic.Config,
+		Players:  g.logic.GetPlayers(),
+		GameName: gameName,
+		CanJoin:  true,
+	}
+	g.logic.Init()
+	g.networkMgr = network.NewNetworkManager(proto.NodeRole_MASTER, gameAnnounce)
+	g.networkMgr.SetGameAnnouncementListener(g)
+	err := g.networkMgr.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (g *Game) joinGame() {
+	g.networkMgr = network.NewNetworkManager(proto.NodeRole_NORMAL, nil)
+	g.networkMgr.SetGameAnnouncementListener(g)
+	err := g.networkMgr.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+	g.showGames()
+}
+
+func (g *Game) showGames() {
+	if g.networkMgr == nil {
+		g.networkMgr = network.NewNetworkManager(proto.NodeRole_NORMAL, nil)
+		g.networkMgr.SetGameAnnouncementListener(g)
+		g.networkMgr.Start()
+	}
+	g.ui.ShowGameList(g.games)
 }

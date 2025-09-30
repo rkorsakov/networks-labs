@@ -4,8 +4,10 @@ import (
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
+	"snake-game/internal/game/interfaces"
 	"snake-game/internal/game/ui"
 	prt "snake-game/internal/proto/gen"
+	"time"
 )
 
 const (
@@ -13,12 +15,14 @@ const (
 )
 
 type Manager struct {
-	unicastConn   *net.UDPConn
-	multicastConn *net.UDPConn
-	role          prt.NodeRole
-	msgSeq        int64
-	gameAnnounce  *prt.GameAnnouncement
-	ui            *ui.ConsoleUI
+	unicastConn    *net.UDPConn
+	multicastConn  *net.UDPConn
+	role           prt.NodeRole
+	msgSeq         int64
+	gameAnnounce   *prt.GameAnnouncement
+	ui             *ui.ConsoleUI
+	announceTicker *time.Ticker
+	gameListener   interfaces.GameAnnouncementListener
 }
 
 func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *Manager {
@@ -30,6 +34,10 @@ func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *M
 	}
 }
 
+func (m *Manager) SetGameAnnouncementListener(listener interfaces.GameAnnouncementListener) {
+	m.gameListener = listener
+}
+
 func (m *Manager) Start() error {
 	if err := m.setupUnicastSocket(); err != nil {
 		return err
@@ -38,6 +46,9 @@ func (m *Manager) Start() error {
 		return err
 	}
 	go m.listenForMessages()
+	if m.role == prt.NodeRole_MASTER {
+		m.startAnnouncementBroadcast()
+	}
 	return nil
 }
 
@@ -53,6 +64,15 @@ func (m *Manager) setupUnicastSocket() error {
 	m.unicastConn = conn
 	log.Printf("Unicast socket bound to %s", conn.LocalAddr())
 	return nil
+}
+
+func (m *Manager) startAnnouncementBroadcast() {
+	m.announceTicker = time.NewTicker(1 * time.Second)
+	go func() {
+		for range m.announceTicker.C {
+			m.sendAnnouncement()
+		}
+	}()
 }
 
 func (m *Manager) setupMulticastSocket() error {
@@ -103,7 +123,7 @@ func (m *Manager) sendAnnouncement() {
 		return
 	}
 
-	groupAddr, _ := net.ResolveUDPAddr("udp", "239.192.0.4:9192")
+	groupAddr, _ := net.ResolveUDPAddr("udp", multicastAddr)
 	_, err = m.multicastConn.WriteToUDP(data, groupAddr)
 	if err != nil {
 		log.Printf("Error sending announcement: %v", err)
