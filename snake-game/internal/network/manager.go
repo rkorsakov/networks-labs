@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
@@ -24,6 +25,13 @@ type Manager struct {
 	announceTicker *time.Ticker
 	gameListener   interfaces.GameAnnouncementListener
 	localPort      int
+	availableGames map[string]*GameInfo
+	playerID       int32
+}
+
+type GameInfo struct {
+	Announcement *prt.GameAnnouncement
+	MasterAddr   *net.UDPAddr
 }
 
 func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *Manager {
@@ -123,18 +131,15 @@ func (m *Manager) sendAnnouncement() {
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
-
 	announcementMsg := &prt.GameMessage_AnnouncementMsg{
 		Games: []*prt.GameAnnouncement{m.gameAnnounce},
 	}
-
 	msg := &prt.GameMessage{
 		MsgSeq: m.msgSeq,
 		Type: &prt.GameMessage_Announcement{
 			Announcement: announcementMsg,
 		},
 	}
-
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		log.Printf("Error marshaling message: %v", err)
@@ -149,10 +154,35 @@ func (m *Manager) sendAnnouncement() {
 	m.msgSeq++
 }
 
+func (m *Manager) SendJoinRequest(playerType prt.PlayerType, playerName string, gameName string, role prt.NodeRole) error {
+	gameInfo, _ := m.availableGames[gameName]
+	joinMsg := &prt.GameMessage_JoinMsg{PlayerType: playerType, PlayerName: playerName, GameName: gameName, RequestedRole: role}
+	msg := &prt.GameMessage{
+		MsgSeq: m.msgSeq,
+		Type: &prt.GameMessage_Join{
+			Join: joinMsg,
+		},
+	}
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("marshaling join message: %v", err)
+
+	}
+	_, err = m.unicastConn.WriteToUDP(data, gameInfo.MasterAddr)
+	if err != nil {
+		return fmt.Errorf("sending join request: %v", err)
+	}
+	m.msgSeq++
+	log.Printf("Join request sent to %s for game: %s, role: %v",
+		gameInfo.MasterAddr, gameName, role)
+	return nil
+}
+
 func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnouncement) {
 	m.role = role
 	m.gameAnnounce = announcement
-
+	gp := announcement.GetPlayers().GetPlayers()[0]
+	m.playerID = gp.Id
 	if role == prt.NodeRole_MASTER {
 		m.startAnnouncementBroadcast()
 	} else if m.announceTicker != nil {

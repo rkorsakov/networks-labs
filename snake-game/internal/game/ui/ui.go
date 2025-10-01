@@ -39,28 +39,42 @@ func (ui *ConsoleUI) ShowMainMenu() MenuOption {
 	return MenuOption(ui.readIntInput(1, 4))
 }
 
-func (ui *ConsoleUI) ShowGameList(games []*proto.GameAnnouncement) (int, bool) {
+func (ui *ConsoleUI) ShowGameList(games []*proto.GameAnnouncement) {
 	if len(games) == 0 {
 		fmt.Println("\nNo available games found.")
-		fmt.Println("1. Back to main menu")
-		fmt.Print("Choose option: ")
-		choice := ui.readIntInput(1, 1)
-		return 0, choice == 1
+		return
 	}
 	fmt.Println("\n=== AVAILABLE GAMES ===")
-	for i, game := range games {
-		fmt.Printf("%d. %s (Players: %d)\n", i+1, game.GameName, len(game.Players.Players))
+	for _, game := range games {
+		fmt.Printf("%s (Players: %d)\n", game.GameName, len(game.Players.Players))
 		fmt.Printf("   Field: %dx%d, Food: %d\n",
 			game.Config.Width, game.Config.Height, game.Config.FoodStatic)
 	}
-	fmt.Printf("%d. Back to main menu\n", len(games)+1)
-	fmt.Print("Choose game to join: ")
+}
 
-	choice := ui.readIntInput(1, len(games)+1)
-	if choice == len(games)+1 {
-		return 0, true
+func (ui *ConsoleUI) ReadJoinInfo() (string, proto.NodeRole) {
+	fmt.Print("Enter game name to join: ")
+	gameName := ui.readStringInput()
+
+	role := ui.readPlayerRole()
+
+	return gameName, role
+}
+
+func (ui *ConsoleUI) readPlayerRole() proto.NodeRole {
+	for {
+		fmt.Print("Enter mode (possible values are NORMAL and VIEWER): ")
+		mode := strings.ToUpper(ui.readStringInput())
+
+		switch mode {
+		case "NORMAL":
+			return proto.NodeRole_NORMAL
+		case "VIEWER":
+			return proto.NodeRole_VIEWER
+		default:
+			fmt.Println("Invalid input. Please enter either NORMAL or VIEWER.")
+		}
 	}
-	return choice - 1, false
 }
 
 func (ui *ConsoleUI) ReadGameName() string {
@@ -113,4 +127,14 @@ func (ui *ConsoleUI) readIntInput(min, max int) int {
 		}
 		fmt.Printf("Please enter a number between %d and %d: ", min, max)
 	}
+}
+
+func (ui *ConsoleUI) readStringInput() string {
+	if ui.scanner.Scan() {
+		text := strings.TrimSpace(ui.scanner.Text())
+		if text != "" {
+			return text
+		}
+	}
+	return ""
 }

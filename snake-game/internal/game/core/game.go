@@ -145,9 +145,30 @@ func (g *Game) startNewGame() {
 }
 
 func (g *Game) joinGame() {
-	//TODO
+	gameName, playerRole := g.ui.ReadJoinInfo()
+	found := false
+	for _, game := range g.games {
+		if game.GameName == gameName {
+			found = true
+			if !game.CanJoin {
+				fmt.Println("Can't join game - no available slots")
+				return
+			}
+			break
+		}
+	}
+	if !found {
+		fmt.Println("Game not found or no announcement received yet")
+		return
+	}
+	playerName := g.ui.ReadPlayerName()
+	err := g.networkMgr.SendJoinRequest(proto.PlayerType_HUMAN, playerName, gameName, playerRole)
+	if err != nil {
+		fmt.Printf("Failed to send join request: %v\n", err)
+		return
+	}
+	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
 }
-
 func (g *Game) showGames() {
 	g.ui.ShowGameList(g.games)
 }
