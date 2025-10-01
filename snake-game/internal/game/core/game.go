@@ -169,6 +169,7 @@ func (g *Game) joinGame() {
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
 }
+
 func (g *Game) showGames() {
 	g.ui.ShowGameList(g.games)
 }
