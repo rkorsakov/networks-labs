@@ -67,6 +67,7 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 	if msg.GetReceiverId() != 0 {
 		m.playerID = msg.GetReceiverId()
 		log.Printf("Successfully joined the game! Player ID: %d", m.playerID)
+
 	} else {
 		log.Printf("Received ACK for message seq %d from %s", msg.GetMsgSeq(), addr)
 	}
@@ -81,7 +82,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 	joinMsg := msg.GetJoin()
 	ackMsg := &prt.GameMessage_AckMsg{}
 	if joinMsg.RequestedRole == prt.NodeRole_VIEWER {
-		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: 3}
+		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: -1}
 		data, err := proto.Marshal(message)
 		if err != nil {
 			fmt.Printf("Error marshaling message: %v", err)

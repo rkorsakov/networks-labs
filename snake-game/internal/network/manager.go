@@ -81,10 +81,13 @@ func (m *Manager) setupUnicastSocket() error {
 }
 
 func (m *Manager) startAnnouncementBroadcast() {
-	m.announceTicker = time.NewTicker(1 * time.Second)
+	m.announceTicker = time.NewTicker(10 * time.Second)
 	go func() {
 		for range m.announceTicker.C {
 			m.sendAnnouncement()
+			for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
+				log.Println(player.Name, player.Role, player.Id)
+			}
 		}
 	}()
 }
@@ -189,4 +192,8 @@ func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnounceme
 		m.announceTicker.Stop()
 		m.announceTicker = nil
 	}
+}
+
+func (m *Manager) GetID() int32 {
+	return m.playerID
 }

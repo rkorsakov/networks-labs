@@ -168,8 +168,11 @@ func (g *Game) joinGame() {
 		return
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
+	time.Sleep(3 * time.Second)
+	if g.networkMgr.GetID() == -1 {
+		g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_VIEWER))
+	}
 }
-
 func (g *Game) showGames() {
 	g.ui.ShowGameList(g.games)
 }
