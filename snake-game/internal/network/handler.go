@@ -13,7 +13,6 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		log.Printf("Error unmarshaling message: %v", err)
 		return
 	}
-	log.Printf("Received message seq=%d from %s", msg.MsgSeq, addr)
 	switch {
 	case msg.GetPing() != nil:
 		log.Println("Got PING message")
@@ -32,7 +31,6 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handleState(&msg, addr)
 
 	case msg.GetAnnouncement() != nil:
-		log.Println("Got ANNOUNCEMENT message")
 		m.handleAnnouncement(&msg)
 
 	case msg.GetJoin() != nil:

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	multicastAddr = "239.192.0.4:9192"
+	multicastAddr = "239.255.255.250:9999"
 )
 
 type Manager struct {

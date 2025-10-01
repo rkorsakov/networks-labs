@@ -39,7 +39,6 @@ func NewGame() *Game {
 
 func (g *Game) OnGameAnnouncement(games []*proto.GameAnnouncement) {
 	g.games = games
-	log.Printf("Updated game list: %d games available", len(games))
 }
 
 func (g *Game) Update() error {
