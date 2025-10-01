@@ -147,9 +147,11 @@ func (g *Game) startNewGame() {
 func (g *Game) joinGame() {
 	gameName, playerRole := g.ui.ReadJoinInfo()
 	found := false
+	var cfg *proto.GameConfig
 	for _, game := range g.games {
 		if game.GameName == gameName {
 			found = true
+			cfg = game.GetConfig()
 			if !game.CanJoin {
 				fmt.Println("Can't join game - no available slots")
 				return
@@ -161,6 +163,7 @@ func (g *Game) joinGame() {
 		fmt.Println("Game not found or no announcement received yet")
 		return
 	}
+	g.logic = logic.NewGameLogic(cfg)
 	playerName := g.ui.ReadPlayerName()
 	err := g.networkMgr.SendJoinRequest(proto.PlayerType_HUMAN, playerName, gameName, playerRole)
 	if err != nil {
@@ -172,6 +175,7 @@ func (g *Game) joinGame() {
 	if g.networkMgr.GetID() == -1 {
 		g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_VIEWER))
 	}
+	time.Sleep(20 * time.Second)
 }
 func (g *Game) showGames() {
 	g.ui.ShowGameList(g.games)

@@ -91,7 +91,6 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		if err != nil {
 			fmt.Printf("Error writing message: %v", err)
 		}
-
 	}
 }
 
