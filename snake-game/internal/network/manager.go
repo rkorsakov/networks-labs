@@ -76,7 +76,6 @@ func (m *Manager) setupUnicastSocket() error {
 		return err
 	}
 	m.unicastConn = conn
-	log.Printf("Unicast socket bound to %s", conn.LocalAddr())
 	return nil
 }
 
@@ -102,7 +101,6 @@ func (m *Manager) setupMulticastSocket() error {
 		return err
 	}
 	m.multicastConn = conn
-	log.Printf("Multicast socket joined group %s", groupAddr)
 	return nil
 }
 
