@@ -9,12 +9,11 @@ import (
 )
 
 type GameLogic struct {
-	Config          *proto.GameConfig
-	field           *Field
-	state           *proto.GameState
-	rnd             *rand.Rand
-	pendingSteers   map[int32]proto.Direction
-	playerIDCounter int32
+	Config        *proto.GameConfig
+	field         *Field
+	state         *proto.GameState
+	rnd           *rand.Rand
+	pendingSteers map[int32]proto.Direction
 }
 
 func NewGameLogic(config *proto.GameConfig) *GameLogic {
@@ -217,7 +216,9 @@ func (gl *GameLogic) isPositionOccupied(coord *proto.GameState_Coord) bool {
 
 func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
 	gl.state.Players.Players = append(gl.state.Players.Players, player)
-	gl.placeSnake(player)
+	if player.Role == proto.NodeRole_NORMAL {
+		gl.placeSnake(player)
+	}
 }
 
 func (gl *GameLogic) RemovePlayer(playerID int32) {

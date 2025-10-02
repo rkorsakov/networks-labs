@@ -130,7 +130,7 @@ func (g *Game) startNewGame() {
 	gameName := g.ui.ReadGameName()
 	playerName := g.ui.ReadPlayerName()
 	fmt.Printf("Creating game '%s' for player '%s'\n", gameName, playerName)
-	g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_MASTER))
+	g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_MASTER, logic.GeneratePlayerID()))
 	gameAnnounce := &proto.GameAnnouncement{
 		Config:   g.logic.Config,
 		Players:  g.logic.GetPlayers(),
@@ -146,21 +146,16 @@ func (g *Game) startNewGame() {
 
 func (g *Game) joinGame() {
 	gameName, playerRole := g.ui.ReadJoinInfo()
-	found := false
 	var cfg *proto.GameConfig
-	for _, game := range g.games {
-		if game.GameName == gameName {
-			found = true
-			cfg = game.GetConfig()
-			if !game.CanJoin {
-				fmt.Println("Can't join game - no available slots")
-				return
-			}
+	var targetGame *proto.GameAnnouncement
+	for name, gameInfo := range g.networkMgr.AvailableGames {
+		if gameName == name {
+			targetGame = gameInfo.Announcement
 			break
 		}
 	}
-	if !found {
-		fmt.Println("Game not found or no announcement received yet")
+	if targetGame == nil {
+		fmt.Println("Game not found")
 		return
 	}
 	g.logic = logic.NewGameLogic(cfg)
@@ -172,11 +167,15 @@ func (g *Game) joinGame() {
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
 	time.Sleep(3 * time.Second)
-	if g.networkMgr.GetID() == -1 {
-		g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_VIEWER))
+	g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_VIEWER, g.networkMgr.GetID()))
+	g.renderer = graphics.NewRenderer(g.logic)
+	g.networkMgr.ChangeRole(playerRole, targetGame)
+	fmt.Printf("Successfully joined game! Starting as %s...\n", playerRole)
+	if err := ebiten.RunGame(g); err != nil {
+		log.Fatal(err)
 	}
-	time.Sleep(20 * time.Second)
 }
+
 func (g *Game) showGames() {
 	g.ui.ShowGameList(g.games)
 }

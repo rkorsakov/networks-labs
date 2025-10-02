@@ -25,7 +25,7 @@ type Manager struct {
 	announceTicker *time.Ticker
 	gameListener   interfaces.GameAnnouncementListener
 	localPort      int
-	availableGames map[string]*GameInfo
+	AvailableGames map[string]*GameInfo
 	playerID       int32
 }
 
@@ -158,7 +158,7 @@ func (m *Manager) sendAnnouncement() {
 }
 
 func (m *Manager) SendJoinRequest(playerType prt.PlayerType, playerName string, gameName string, role prt.NodeRole) error {
-	gameInfo, _ := m.availableGames[gameName]
+	gameInfo, _ := m.AvailableGames[gameName]
 	joinMsg := &prt.GameMessage_JoinMsg{PlayerType: playerType, PlayerName: playerName, GameName: gameName, RequestedRole: role}
 	msg := &prt.GameMessage{
 		MsgSeq: m.msgSeq,

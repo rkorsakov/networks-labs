@@ -5,6 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"log"
 	"net"
+	"snake-game/internal/game/logic"
 	prt "snake-game/internal/proto/gen"
 )
 
@@ -67,7 +68,6 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 	if msg.GetReceiverId() != 0 {
 		m.playerID = msg.GetReceiverId()
 		log.Printf("Successfully joined the game! Player ID: %d", m.playerID)
-
 	} else {
 		log.Printf("Received ACK for message seq %d from %s", msg.GetMsgSeq(), addr)
 	}
@@ -81,8 +81,21 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 	joinMsg := msg.GetJoin()
 	ackMsg := &prt.GameMessage_AckMsg{}
+	ids := make(map[int32]struct{})
+	for _, val := range m.gameAnnounce.GetPlayers().Players {
+		ids[val.Id] = struct{}{}
+	}
+	newPlayerID := logic.GeneratePlayerID()
+	for {
+		if _, exists := ids[newPlayerID]; !exists {
+			break
+		}
+		newPlayerID = logic.GeneratePlayerID()
+	}
 	if joinMsg.RequestedRole == prt.NodeRole_VIEWER {
-		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: -1}
+		player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0}
+		m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
+		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
 		data, err := proto.Marshal(message)
 		if err != nil {
 			fmt.Printf("Error marshaling message: %v", err)
@@ -99,10 +112,10 @@ func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {}
 func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	games := msg.GetAnnouncement().GetGames()
 	for _, game := range games {
-		if m.availableGames == nil {
-			m.availableGames = make(map[string]*GameInfo)
+		if m.AvailableGames == nil {
+			m.AvailableGames = make(map[string]*GameInfo)
 		}
-		m.availableGames[game.GameName] = &GameInfo{
+		m.AvailableGames[game.GameName] = &GameInfo{
 			Announcement: game,
 			MasterAddr:   addr,
 		}
