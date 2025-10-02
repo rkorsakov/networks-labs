@@ -16,12 +16,13 @@ import (
 )
 
 type Game struct {
-	logic      *logic.GameLogic
-	renderer   *graphics.Renderer
-	lastUpdate time.Time
-	ui         *ui.ConsoleUI
-	games      []*proto.GameAnnouncement
-	networkMgr *network.Manager
+	logic       *logic.GameLogic
+	renderer    *graphics.Renderer
+	lastUpdate  time.Time
+	ui          *ui.ConsoleUI
+	games       []*proto.GameAnnouncement
+	networkMgr  *network.Manager
+	cleanupDone bool
 }
 
 func NewGame() *Game {
@@ -42,6 +43,9 @@ func (g *Game) OnGameAnnouncement(games []*proto.GameAnnouncement) {
 }
 
 func (g *Game) Update() error {
+	if ebiten.IsWindowBeingClosed() {
+		return g.initiateShutdown()
+	}
 	g.handleInput()
 	now := time.Now()
 	interval := time.Duration(g.logic.Config.StateDelayMs) * time.Millisecond
@@ -52,6 +56,29 @@ func (g *Game) Update() error {
 		g.lastUpdate = now
 	}
 	return nil
+}
+
+func (g *Game) initiateShutdown() error {
+	if g.cleanupDone {
+		return nil
+	}
+	g.cleanupDone = true
+	log.Println("Initiating graceful shutdown...")
+	g.cleanup()
+	return ebiten.Termination
+}
+
+func (g *Game) cleanup() {
+	log.Println("Cleaning up game resources...")
+
+	if g.networkMgr != nil {
+		g.networkMgr.Close()
+	}
+	if g.logic != nil && g.networkMgr.GetRole() == proto.NodeRole_MASTER {
+		log.Println("Master is leaving the game")
+	}
+
+	log.Println("Cleanup completed")
 }
 
 func (g *Game) handleInput() {
@@ -169,7 +196,6 @@ func (g *Game) joinGame() {
 	time.Sleep(3 * time.Second)
 	g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_VIEWER, g.networkMgr.GetID()))
 	g.renderer = graphics.NewRenderer(g.logic)
-	g.networkMgr.ChangeRole(playerRole, targetGame)
 	fmt.Printf("Successfully joined game! Starting as %s...\n", playerRole)
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)

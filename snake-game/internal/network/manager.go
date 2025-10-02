@@ -8,6 +8,7 @@ import (
 	"snake-game/internal/game/interfaces"
 	"snake-game/internal/game/ui"
 	prt "snake-game/internal/proto/gen"
+	"sync"
 	"time"
 )
 
@@ -27,6 +28,10 @@ type Manager struct {
 	localPort      int
 	AvailableGames map[string]*GameInfo
 	playerID       int32
+	mu             sync.Mutex
+	closeMutex     sync.Mutex
+	closeChan      chan struct{}
+	wg             sync.WaitGroup
 }
 
 type GameInfo struct {
@@ -40,6 +45,7 @@ func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *M
 		msgSeq:       1,
 		gameAnnounce: gameAnnounce,
 		ui:           ui.NewConsoleUI(),
+		closeChan:    make(chan struct{}),
 	}
 }
 
@@ -58,6 +64,7 @@ func (m *Manager) Start() error {
 	if err := m.setupMulticastSocket(); err != nil {
 		return err
 	}
+	m.wg.Add(2)
 	go m.listenForMessages()
 	go m.listenForMulticast()
 	if m.role == prt.NodeRole_MASTER {
@@ -84,6 +91,7 @@ func (m *Manager) startAnnouncementBroadcast() {
 	go func() {
 		for range m.announceTicker.C {
 			m.sendAnnouncement()
+			fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
 		}
 	}()
 }
@@ -102,8 +110,16 @@ func (m *Manager) setupMulticastSocket() error {
 }
 
 func (m *Manager) listenForMessages() {
+	defer m.wg.Done()
+
 	buf := make([]byte, 4096)
 	for {
+		select {
+		case <-m.closeChan:
+			log.Println("Stopping message listener")
+			return
+		default:
+		}
 		n, addr, err := m.unicastConn.ReadFromUDP(buf)
 		if err != nil {
 			log.Printf("Error reading from UDP: %v", err)
@@ -114,11 +130,18 @@ func (m *Manager) listenForMessages() {
 }
 
 func (m *Manager) listenForMulticast() {
+	defer m.wg.Done()
 	buf := make([]byte, 4096)
 	for {
+		select {
+		case <-m.closeChan:
+			log.Println("Stopping multicast listener")
+			return
+		default:
+		}
 		n, addr, err := m.multicastConn.ReadFromUDP(buf)
 		if err != nil {
-			log.Printf("Error reading from UDP: %v", err)
+			log.Printf("Error reading from multicast UDP: %v", err)
 			continue
 		}
 		go m.handleMessage(buf[:n], addr)
@@ -187,6 +210,26 @@ func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnounceme
 		m.announceTicker.Stop()
 		m.announceTicker = nil
 	}
+}
+
+func (m *Manager) Close() {
+	m.closeMutex.Lock()
+	defer m.closeMutex.Unlock()
+	close(m.closeChan)
+	if m.announceTicker != nil {
+		m.announceTicker.Stop()
+		m.announceTicker = nil
+	}
+	if m.unicastConn != nil {
+		m.unicastConn.Close()
+		m.unicastConn = nil
+	}
+	if m.multicastConn != nil {
+		m.multicastConn.Close()
+		m.multicastConn = nil
+	}
+	m.wg.Wait()
+	log.Println("Network manager closed successfully")
 }
 
 func (m *Manager) GetID() int32 {

@@ -45,7 +45,6 @@ func (gl *GameLogic) Init() {
 }
 
 func (gl *GameLogic) Update() error {
-
 	for playerID, newDirection := range gl.pendingSteers {
 		if snake := gl.getSnakeByPlayerID(playerID); snake != nil && snake.State == proto.GameState_Snake_ALIVE {
 			currentDir := snake.HeadDirection

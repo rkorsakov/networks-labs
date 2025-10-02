@@ -111,6 +111,8 @@ func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
 func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	games := msg.GetAnnouncement().GetGames()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	for _, game := range games {
 		if m.AvailableGames == nil {
 			m.AvailableGames = make(map[string]*GameInfo)
