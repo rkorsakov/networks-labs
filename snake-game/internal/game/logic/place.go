@@ -3,7 +3,7 @@ package logic
 import proto "snake-game/internal/proto/gen"
 
 func (gl *GameLogic) placeSnakes() {
-	for _, player := range gl.players.Players {
+	for _, player := range gl.state.Players.Players {
 		gl.placeSnake(player)
 	}
 }
@@ -46,7 +46,7 @@ func (gl *GameLogic) placeSnake(player *proto.GamePlayer) {
 			State:         proto.GameState_Snake_ALIVE,
 			HeadDirection: headDirection,
 		}
-		gl.snakes[player.Id] = snake
+		gl.state.Snakes = append(gl.state.Snakes, snake)
 		return
 	}
 	head := gl.field.GetRandomPosition(gl.rnd)
@@ -59,5 +59,5 @@ func (gl *GameLogic) placeSnake(player *proto.GamePlayer) {
 		State:         proto.GameState_Snake_ALIVE,
 		HeadDirection: proto.Direction_DOWN,
 	}
-	gl.snakes[player.Id] = snake
+	gl.state.Snakes[player.Id] = snake
 }

@@ -3,44 +3,52 @@ package logic
 import (
 	"fmt"
 	"math/rand/v2"
-	proto "snake-game/internal/proto/gen"
 	"time"
+
+	proto "snake-game/internal/proto/gen"
 )
 
 type GameLogic struct {
 	Config          *proto.GameConfig
 	field           *Field
 	state           *proto.GameState
-	players         *proto.GamePlayers
-	snakes          map[int32]*proto.GameState_Snake
-	foods           []*proto.GameState_Coord
 	rnd             *rand.Rand
 	pendingSteers   map[int32]proto.Direction
 	playerIDCounter int32
 }
 
-func NewGameLogic(Config *proto.GameConfig) *GameLogic {
+func NewGameLogic(config *proto.GameConfig) *GameLogic {
+	if config == nil {
+		config = &proto.GameConfig{
+			Width:      40,
+			Height:     30,
+			FoodStatic: 1,
+		}
+	}
+
 	gl := &GameLogic{
-		Config:        Config,
-		field:         NewField(Config.Width, Config.Height),
-		snakes:        make(map[int32]*proto.GameState_Snake),
-		state:         &proto.GameState{StateOrder: 0},
-		foods:         make([]*proto.GameState_Coord, 0),
+		Config: config,
+		field:  NewField(config.Width, config.Height),
+		state: &proto.GameState{
+			StateOrder: 0,
+			Snakes:     make([]*proto.GameState_Snake, 0),
+			Foods:      make([]*proto.GameState_Coord, 0),
+			Players:    &proto.GamePlayers{Players: make([]*proto.GamePlayer, 0)},
+		},
 		rnd:           rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0)),
 		pendingSteers: make(map[int32]proto.Direction),
-		players:       &proto.GamePlayers{},
 	}
 	return gl
 }
 
 func (gl *GameLogic) Init() {
 	gl.generateInitialFood()
-	gl.placeSnakes()
 }
 
 func (gl *GameLogic) Update() error {
+
 	for playerID, newDirection := range gl.pendingSteers {
-		if snake, exists := gl.snakes[playerID]; exists && snake.State == proto.GameState_Snake_ALIVE {
+		if snake := gl.getSnakeByPlayerID(playerID); snake != nil && snake.State == proto.GameState_Snake_ALIVE {
 			currentDir := snake.HeadDirection
 			if !gl.isReverseDirection(currentDir, newDirection) {
 				snake.HeadDirection = newDirection
@@ -48,6 +56,7 @@ func (gl *GameLogic) Update() error {
 		}
 	}
 	gl.pendingSteers = make(map[int32]proto.Direction)
+
 	gl.moveSnakes()
 	gl.checkCollisions()
 	gl.updateFood()
@@ -56,31 +65,21 @@ func (gl *GameLogic) Update() error {
 }
 
 func (gl *GameLogic) moveSnakes() {
-	for _, snake := range gl.snakes {
+	for _, snake := range gl.state.Snakes {
 		gl.moveSnake(snake)
 	}
-}
-
-func (gl *GameLogic) SteerSnake(playerID int32, direction proto.Direction) error {
-	snake, exists := gl.snakes[playerID]
-	if !exists {
-		return fmt.Errorf("snake for player %d not found", playerID)
-	}
-	if snake.State != proto.GameState_Snake_ALIVE {
-		return fmt.Errorf("snake is ZOMBIE")
-	}
-	gl.pendingSteers[playerID] = direction
-	return nil
 }
 
 func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	if snake.State != proto.GameState_Snake_ALIVE {
 		return
 	}
+
 	newHead := &proto.GameState_Coord{
 		X: snake.Points[0].X,
 		Y: snake.Points[0].Y,
 	}
+
 	switch snake.HeadDirection {
 	case proto.Direction_UP:
 		newHead.Y = (newHead.Y - 1 + gl.field.Height) % gl.field.Height
@@ -91,14 +90,16 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	case proto.Direction_RIGHT:
 		newHead.X = (newHead.X + 1) % gl.field.Width
 	}
+
 	newPoints := make([]*proto.GameState_Coord, 0, len(snake.Points)+1)
 	newPoints = append(newPoints, newHead)
 	newPoints = append(newPoints, snake.Points...)
+
 	ateFood := false
-	for i, food := range gl.foods {
+	for i, food := range gl.state.Foods {
 		if food.X == newHead.X && food.Y == newHead.Y {
 			ateFood = true
-			gl.foods = append(gl.foods[:i], gl.foods[i+1:]...)
+			gl.state.Foods = append(gl.state.Foods[:i], gl.state.Foods[i+1:]...)
 			break
 		}
 	}
@@ -110,22 +111,20 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 	snake.Points = newPoints
 }
 
-type coordKey struct {
-	X, Y int32
-}
-
 func (gl *GameLogic) checkCollisions() {
+	type coordKey struct{ X, Y int32 }
 	collisions := make(map[int32]bool)
 	headCoords := make(map[coordKey]int32)
 	bodyCoords := make(map[coordKey]struct{})
 
-	for playerID, snake := range gl.snakes {
+	for _, snake := range gl.state.Snakes {
 		if snake.State != proto.GameState_Snake_ALIVE {
 			continue
 		}
+
 		head := snake.Points[0]
 		headKey := coordKey{X: head.X, Y: head.Y}
-		headCoords[headKey] = playerID
+		headCoords[headKey] = snake.PlayerId
 
 		for i := 1; i < len(snake.Points); i++ {
 			point := snake.Points[i]
@@ -135,6 +134,7 @@ func (gl *GameLogic) checkCollisions() {
 	}
 
 	for headKey, playerID := range headCoords {
+
 		if _, exists := bodyCoords[headKey]; exists {
 			collisions[playerID] = true
 			continue
@@ -153,10 +153,12 @@ func (gl *GameLogic) checkCollisions() {
 	}
 
 	for playerID := range collisions {
-		if snake, exists := gl.snakes[playerID]; exists {
+		if snake := gl.getSnakeByPlayerID(playerID); snake != nil {
+			snake.State = proto.GameState_Snake_ZOMBIE
+
 			for _, point := range snake.Points {
 				if gl.rnd.Float32() < 0.5 {
-					gl.foods = append(gl.foods, &proto.GameState_Coord{
+					gl.state.Foods = append(gl.state.Foods, &proto.GameState_Coord{
 						X: point.X,
 						Y: point.Y,
 					})
@@ -168,15 +170,16 @@ func (gl *GameLogic) checkCollisions() {
 
 func (gl *GameLogic) updateFood() {
 	targetFood := int(gl.Config.FoodStatic)
-	for _, snake := range gl.snakes {
+	for _, snake := range gl.state.Snakes {
 		if snake.State == proto.GameState_Snake_ALIVE {
 			targetFood++
 		}
 	}
-	for len(gl.foods) < targetFood {
+
+	for len(gl.state.Foods) < targetFood {
 		newFood := gl.generateFoodPosition()
-		if !gl.isFoodOnSnake(newFood) {
-			gl.foods = append(gl.foods, newFood)
+		if !gl.isPositionOccupied(newFood) {
+			gl.state.Foods = append(gl.state.Foods, newFood)
 		} else {
 			break
 		}
@@ -185,16 +188,77 @@ func (gl *GameLogic) updateFood() {
 
 func (gl *GameLogic) generateInitialFood() {
 	for i := 0; i < int(gl.Config.FoodStatic); i++ {
-		gl.foods = append(gl.foods, gl.generateFoodPosition())
+		gl.state.Foods = append(gl.state.Foods, gl.generateFoodPosition())
 	}
+}
+
+func (gl *GameLogic) generateFoodPosition() *proto.GameState_Coord {
+	return gl.field.GetRandomPosition(gl.rnd)
+}
+
+func (gl *GameLogic) isPositionOccupied(coord *proto.GameState_Coord) bool {
+
+	for _, food := range gl.state.Foods {
+		if food.X == coord.X && food.Y == coord.Y {
+			return true
+		}
+	}
+
+	for _, snake := range gl.state.Snakes {
+		for _, point := range snake.Points {
+			if point.X == coord.X && point.Y == coord.Y {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
+	gl.state.Players.Players = append(gl.state.Players.Players, player)
+	gl.placeSnake(player)
+}
+
+func (gl *GameLogic) RemovePlayer(playerID int32) {
+	for i, player := range gl.state.Players.Players {
+		if player.Id == playerID {
+			gl.state.Players.Players = append(gl.state.Players.Players[:i], gl.state.Players.Players[i+1:]...)
+			break
+		}
+	}
+	if snake := gl.getSnakeByPlayerID(playerID); snake != nil {
+		snake.State = proto.GameState_Snake_ZOMBIE
+	}
+}
+
+func (gl *GameLogic) SteerSnake(playerID int32, direction proto.Direction) error {
+	snake := gl.getSnakeByPlayerID(playerID)
+	if snake == nil {
+		return fmt.Errorf("snake for player %d not found", playerID)
+	}
+	if snake.State != proto.GameState_Snake_ALIVE {
+		return fmt.Errorf("snake is ZOMBIE")
+	}
+	gl.pendingSteers[playerID] = direction
+	return nil
+}
+
+func (gl *GameLogic) getSnakeByPlayerID(playerID int32) *proto.GameState_Snake {
+	for _, snake := range gl.state.Snakes {
+		if snake.PlayerId == playerID {
+			return snake
+		}
+	}
+	return nil
 }
 
 func (gl *GameLogic) getTailPosition(head *proto.GameState_Coord, direction proto.Direction) *proto.GameState_Coord {
 	switch direction {
 	case proto.Direction_UP:
-		return &proto.GameState_Coord{X: head.X, Y: head.Y - 1}
-	case proto.Direction_DOWN:
 		return &proto.GameState_Coord{X: head.X, Y: head.Y + 1}
+	case proto.Direction_DOWN:
+		return &proto.GameState_Coord{X: head.X, Y: head.Y - 1}
 	case proto.Direction_LEFT:
 		return &proto.GameState_Coord{X: head.X + 1, Y: head.Y}
 	case proto.Direction_RIGHT:
@@ -215,13 +279,4 @@ func (gl *GameLogic) getOppositeDirection(dir proto.Direction) proto.Direction {
 		return proto.Direction_LEFT
 	}
 	return proto.Direction_UP
-}
-
-func (gl *GameLogic) generateFoodPosition() *proto.GameState_Coord {
-	return gl.field.GetRandomPosition(gl.rnd)
-
-}
-
-func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
-	gl.players.Players = append(gl.players.Players, player)
 }
