@@ -84,9 +84,6 @@ func (m *Manager) startAnnouncementBroadcast() {
 	go func() {
 		for range m.announceTicker.C {
 			m.sendAnnouncement()
-			for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
-				log.Println(player.Name, player.Role, player.Id)
-			}
 		}
 	}()
 }
