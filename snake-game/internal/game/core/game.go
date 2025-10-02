@@ -63,22 +63,14 @@ func (g *Game) initiateShutdown() error {
 		return nil
 	}
 	g.cleanupDone = true
-	log.Println("Initiating graceful shutdown...")
 	g.cleanup()
 	return ebiten.Termination
 }
 
 func (g *Game) cleanup() {
-	log.Println("Cleaning up game resources...")
-
 	if g.networkMgr != nil {
 		g.networkMgr.Close()
 	}
-	if g.logic != nil && g.networkMgr.GetRole() == proto.NodeRole_MASTER {
-		log.Println("Master is leaving the game")
-	}
-
-	log.Println("Cleanup completed")
 }
 
 func (g *Game) handleInput() {

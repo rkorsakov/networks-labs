@@ -91,7 +91,6 @@ func (m *Manager) startAnnouncementBroadcast() {
 	go func() {
 		for range m.announceTicker.C {
 			m.sendAnnouncement()
-			fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
 		}
 	}()
 }
@@ -111,12 +110,10 @@ func (m *Manager) setupMulticastSocket() error {
 
 func (m *Manager) listenForMessages() {
 	defer m.wg.Done()
-
 	buf := make([]byte, 4096)
 	for {
 		select {
 		case <-m.closeChan:
-			log.Println("Stopping message listener")
 			return
 		default:
 		}
@@ -135,7 +132,6 @@ func (m *Manager) listenForMulticast() {
 	for {
 		select {
 		case <-m.closeChan:
-			log.Println("Stopping multicast listener")
 			return
 		default:
 		}
@@ -229,7 +225,6 @@ func (m *Manager) Close() {
 		m.multicastConn = nil
 	}
 	m.wg.Wait()
-	log.Println("Network manager closed successfully")
 }
 
 func (m *Manager) GetID() int32 {
