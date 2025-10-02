@@ -80,7 +80,7 @@ func (m *Manager) setupUnicastSocket() error {
 }
 
 func (m *Manager) startAnnouncementBroadcast() {
-	m.announceTicker = time.NewTicker(10 * time.Second)
+	m.announceTicker = time.NewTicker(1 * time.Second)
 	go func() {
 		for range m.announceTicker.C {
 			m.sendAnnouncement()
