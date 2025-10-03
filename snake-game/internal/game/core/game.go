@@ -43,17 +43,23 @@ func (g *Game) OnGameAnnouncement(games []*proto.GameAnnouncement) {
 }
 
 func (g *Game) Update() error {
-	if ebiten.IsWindowBeingClosed() {
-		return g.initiateShutdown()
-	}
-	g.handleInput()
-	now := time.Now()
-	interval := time.Duration(g.logic.Config.StateDelayMs) * time.Millisecond
-	if now.Sub(g.lastUpdate) >= interval {
-		if err := g.logic.Update(); err != nil {
-			return err
+	if g.networkMgr.GetRole() == proto.NodeRole_MASTER {
+		if ebiten.IsWindowBeingClosed() {
+			return g.initiateShutdown()
 		}
-		g.lastUpdate = now
+		g.handleInput()
+		now := time.Now()
+		interval := time.Duration(g.logic.Config.StateDelayMs) * time.Millisecond
+		if now.Sub(g.lastUpdate) >= interval {
+			if err := g.logic.Update(); err != nil {
+				return fmt.Errorf("error updating game: %v", err)
+			}
+			g.lastUpdate = now
+			err := g.networkMgr.SendState(g.logic.GetState())
+			if err != nil {
+				return fmt.Errorf("error updating game: %v", err)
+			}
+		}
 	}
 	return nil
 }

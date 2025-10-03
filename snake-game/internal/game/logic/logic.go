@@ -54,7 +54,6 @@ func (gl *GameLogic) Update() error {
 		}
 	}
 	gl.pendingSteers = make(map[int32]proto.Direction)
-
 	gl.moveSnakes()
 	gl.checkCollisions()
 	gl.updateFood()

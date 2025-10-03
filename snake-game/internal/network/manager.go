@@ -1,8 +1,6 @@
 package network
 
 import (
-	"fmt"
-	"google.golang.org/protobuf/proto"
 	"log"
 	"net"
 	"snake-game/internal/game/interfaces"
@@ -25,7 +23,6 @@ type Manager struct {
 	ui             *ui.ConsoleUI
 	announceTicker *time.Ticker
 	gameListener   interfaces.GameAnnouncementListener
-	localPort      int
 	AvailableGames map[string]*GameInfo
 	playerID       int32
 	mu             sync.Mutex
@@ -142,57 +139,6 @@ func (m *Manager) listenForMulticast() {
 		}
 		go m.handleMessage(buf[:n], addr)
 	}
-}
-
-func (m *Manager) sendAnnouncement() {
-	if m.role != prt.NodeRole_MASTER {
-		return
-	}
-	announcementMsg := &prt.GameMessage_AnnouncementMsg{
-		Games: []*prt.GameAnnouncement{m.gameAnnounce},
-	}
-	msg := &prt.GameMessage{
-		MsgSeq: m.msgSeq,
-		Type: &prt.GameMessage_Announcement{
-			Announcement: announcementMsg,
-		},
-	}
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		log.Printf("Error marshaling message: %v", err)
-		return
-	}
-	groupAddr, _ := net.ResolveUDPAddr("udp", multicastAddr)
-	_, err = m.multicastConn.WriteToUDP(data, groupAddr)
-	if err != nil {
-		log.Printf("Error sending announcement: %v", err)
-		return
-	}
-	m.msgSeq++
-}
-
-func (m *Manager) SendJoinRequest(playerType prt.PlayerType, playerName string, gameName string, role prt.NodeRole) error {
-	gameInfo, _ := m.AvailableGames[gameName]
-	joinMsg := &prt.GameMessage_JoinMsg{PlayerType: playerType, PlayerName: playerName, GameName: gameName, RequestedRole: role}
-	msg := &prt.GameMessage{
-		MsgSeq: m.msgSeq,
-		Type: &prt.GameMessage_Join{
-			Join: joinMsg,
-		},
-	}
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return fmt.Errorf("marshaling join message: %v", err)
-
-	}
-	_, err = m.unicastConn.WriteToUDP(data, gameInfo.MasterAddr)
-	if err != nil {
-		return fmt.Errorf("sending join request: %v", err)
-	}
-	m.msgSeq++
-	log.Printf("Join request sent to %s for game: %s, role: %v",
-		gameInfo.MasterAddr, gameName, role)
-	return nil
 }
 
 func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnouncement) {

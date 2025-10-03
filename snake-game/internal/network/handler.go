@@ -107,7 +107,9 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {
+
+}
 
 func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	games := msg.GetAnnouncement().GetGames()

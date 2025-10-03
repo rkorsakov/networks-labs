@@ -25,3 +25,7 @@ func (gl *GameLogic) GetPlayer(playerID int32) (*proto.GamePlayer, error) {
 func (gl *GameLogic) GetPlayers() *proto.GamePlayers {
 	return gl.state.Players
 }
+
+func (gl *GameLogic) GetState() *proto.GameState {
+	return gl.state
+}
