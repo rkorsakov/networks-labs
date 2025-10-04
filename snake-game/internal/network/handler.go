@@ -93,7 +93,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		newPlayerID = logic.GeneratePlayerID()
 	}
 	if joinMsg.RequestedRole == prt.NodeRole_VIEWER {
-		player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0}
+		player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: string(addr.IP), Port: int32(addr.Port)}
 		m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
 		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
 		data, err := proto.Marshal(message)
