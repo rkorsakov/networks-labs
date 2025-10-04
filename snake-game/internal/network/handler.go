@@ -29,7 +29,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handleAck(&msg, addr)
 
 	case msg.GetState() != nil:
-		m.handleState(&msg, addr)
+		m.handleState(&msg)
 
 	case msg.GetAnnouncement() != nil:
 		m.handleAnnouncement(&msg, addr)
@@ -106,7 +106,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleState(msg *prt.GameMessage) {
 	gameState := msg.GetState().State
 	if m.stateListener != nil {
 		m.stateListener.OnGameStateReceived(gameState)
