@@ -60,6 +60,9 @@ func (m *Manager) handlePing(msg *prt.GameMessage, addr *net.UDPAddr) {}
 func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
 func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
+	if m.msgSeq != msg.MsgSeq {
+		return
+	}
 	ackMsg := msg.GetAck()
 	if ackMsg == nil {
 		return
@@ -91,19 +94,19 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		}
 		newPlayerID = logic.GeneratePlayerID()
 	}
-	if joinMsg.RequestedRole == prt.NodeRole_VIEWER {
-		player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
-		m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
-		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
-		data, err := proto.Marshal(message)
-		if err != nil {
-			fmt.Printf("Error marshaling message: %v", err)
-		}
-		_, err = m.unicastConn.WriteToUDP(data, addr)
-		if err != nil {
-			fmt.Printf("Error writing message: %v", err)
-		}
+	player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
+	m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
+	m.joinListener.OnGameAddPlayer(player)
+	message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
+	data, err := proto.Marshal(message)
+	if err != nil {
+		fmt.Printf("Error marshaling message: %v", err)
 	}
+	_, err = m.unicastConn.WriteToUDP(data, addr)
+	if err != nil {
+		fmt.Printf("Error writing message: %v", err)
+	}
+
 }
 
 func (m *Manager) handleState(msg *prt.GameMessage) {

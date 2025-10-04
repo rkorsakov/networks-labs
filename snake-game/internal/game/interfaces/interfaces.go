@@ -9,3 +9,7 @@ type GameAnnouncementListener interface {
 type GameStateListener interface {
 	OnGameStateReceived(state *prt.GameState)
 }
+
+type GameJoinListener interface {
+	OnGameAddPlayer(player *prt.GamePlayer)
+}

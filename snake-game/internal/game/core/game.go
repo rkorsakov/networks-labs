@@ -47,6 +47,10 @@ func (g *Game) OnGameStateReceived(state *proto.GameState) {
 	g.logic.SetState(state)
 }
 
+func (g *Game) OnGameAddPlayer(player *proto.GamePlayer) {
+	g.logic.AddPlayer(player)
+}
+
 func (g *Game) Update() error {
 	if g.networkMgr.GetRole() == proto.NodeRole_MASTER {
 		if ebiten.IsWindowBeingClosed() {
@@ -219,7 +223,6 @@ func (g *Game) joinGame() {
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
 	time.Sleep(3 * time.Second)
-	g.logic.AddPlayer(g.logic.NewPlayer(playerName, proto.PlayerType_HUMAN, proto.NodeRole_VIEWER, g.networkMgr.GetID()))
 	g.renderer = graphics.NewRenderer(g.logic)
 	fmt.Printf("Successfully joined game! Starting as %s...\n", playerRole)
 	if err := ebiten.RunGame(g); err != nil {

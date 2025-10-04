@@ -24,6 +24,7 @@ type Manager struct {
 	announceTicker *time.Ticker
 	gameListener   interfaces.GameAnnouncementListener
 	stateListener  interfaces.GameStateListener
+	joinListener   interfaces.GameJoinListener
 	AvailableGames map[string]*GameInfo
 	playerID       int32
 	mu             sync.Mutex
@@ -53,6 +54,10 @@ func (m *Manager) SetGameAnnouncementListener(listener interfaces.GameAnnounceme
 
 func (m *Manager) SetGameStateListener(listener interfaces.GameStateListener) {
 	m.stateListener = listener
+}
+
+func (m *Manager) SetGameJoinListener(listener interfaces.GameJoinListener) {
+	m.joinListener = listener
 }
 
 func (m *Manager) GetRole() prt.NodeRole {
