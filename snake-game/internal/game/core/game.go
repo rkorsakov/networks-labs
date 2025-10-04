@@ -32,6 +32,7 @@ func NewGame() *Game {
 	}
 	game.networkMgr = network.NewNetworkManager(proto.NodeRole_NORMAL, nil)
 	game.networkMgr.SetGameAnnouncementListener(game)
+	game.networkMgr.SetGameStateListener(game)
 	if err := game.networkMgr.Start(); err != nil {
 		log.Printf("Failed to start network manager: %v", err)
 	}
