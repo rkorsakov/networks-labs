@@ -176,7 +176,6 @@ func (g *Game) startNewGame() {
 
 func (g *Game) joinGame() {
 	gameName, playerRole := g.ui.ReadJoinInfo()
-	var cfg *proto.GameConfig
 	var targetGame *proto.GameAnnouncement
 	for name, gameInfo := range g.networkMgr.AvailableGames {
 		if gameName == name {
@@ -188,6 +187,7 @@ func (g *Game) joinGame() {
 		fmt.Println("Game not found")
 		return
 	}
+	cfg := targetGame.Config
 	g.logic = logic.NewGameLogic(cfg)
 	playerName := g.ui.ReadPlayerName()
 	err := g.networkMgr.SendJoinRequest(proto.PlayerType_HUMAN, playerName, gameName, playerRole)

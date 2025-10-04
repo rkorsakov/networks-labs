@@ -61,7 +61,6 @@ func (r *Renderer) drawSnakes(screen *ebiten.Image) {
 func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.Color) {
 	rect := ebiten.NewImage(r.cellSize-1, r.cellSize-1)
 	rect.Fill(clr)
-
 	opts := &ebiten.DrawImageOptions{}
 	opts.GeoM.Translate(float64(x*r.cellSize), float64(y*r.cellSize))
 	screen.DrawImage(rect, opts)
