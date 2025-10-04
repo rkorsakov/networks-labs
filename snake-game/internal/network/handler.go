@@ -29,7 +29,6 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handleAck(&msg, addr)
 
 	case msg.GetState() != nil:
-		log.Println("Got STATE message")
 		m.handleState(&msg, addr)
 
 	case msg.GetAnnouncement() != nil:
@@ -93,7 +92,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		newPlayerID = logic.GeneratePlayerID()
 	}
 	if joinMsg.RequestedRole == prt.NodeRole_VIEWER {
-		player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: string(addr.IP), Port: int32(addr.Port)}
+		player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
 		m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
 		message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
 		data, err := proto.Marshal(message)
@@ -108,7 +107,10 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleState(msg *prt.GameMessage, addr *net.UDPAddr) {
-
+	gameState := msg.GetState().State
+	if m.stateListener != nil {
+		m.stateListener.OnGameStateReceived(gameState)
+	}
 }
 
 func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {

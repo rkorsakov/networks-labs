@@ -42,6 +42,10 @@ func (g *Game) OnGameAnnouncement(games []*proto.GameAnnouncement) {
 	g.games = games
 }
 
+func (g *Game) OnGameStateReceived(state *proto.GameState) {
+	g.logic.SetState(state)
+}
+
 func (g *Game) Update() error {
 	if g.networkMgr.GetRole() == proto.NodeRole_MASTER {
 		if ebiten.IsWindowBeingClosed() {

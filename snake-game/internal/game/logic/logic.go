@@ -279,3 +279,7 @@ func (gl *GameLogic) getOppositeDirection(dir proto.Direction) proto.Direction {
 	}
 	return proto.Direction_UP
 }
+
+func (gl *GameLogic) SetState(state *proto.GameState) {
+	gl.state = state
+}

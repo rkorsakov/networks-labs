@@ -23,6 +23,7 @@ type Manager struct {
 	ui             *ui.ConsoleUI
 	announceTicker *time.Ticker
 	gameListener   interfaces.GameAnnouncementListener
+	stateListener  interfaces.GameStateListener
 	AvailableGames map[string]*GameInfo
 	playerID       int32
 	mu             sync.Mutex
@@ -48,6 +49,10 @@ func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *M
 
 func (m *Manager) SetGameAnnouncementListener(listener interfaces.GameAnnouncementListener) {
 	m.gameListener = listener
+}
+
+func (m *Manager) SetGameStateListener(listener interfaces.GameStateListener) {
+	m.stateListener = listener
 }
 
 func (m *Manager) GetRole() prt.NodeRole {
