@@ -72,6 +72,9 @@ func (m *Manager) SendState(gameState *prt.GameState) error {
 	}
 	var playerAddr *net.UDPAddr
 	for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
+		if player.GetId() == m.playerID {
+			continue
+		}
 		port := strconv.Itoa(int(player.GetPort()))
 		playerAddr, err = net.ResolveUDPAddr("udp", net.JoinHostPort(player.IpAddress, port))
 		if err != nil {
