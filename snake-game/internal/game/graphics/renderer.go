@@ -14,8 +14,7 @@ type Renderer struct {
 
 func NewRenderer(logic *logic.GameLogic) *Renderer {
 	return &Renderer{
-		logic:    logic,
-		cellSize: 20,
+		logic: logic,
 	}
 }
 
@@ -64,4 +63,8 @@ func (r *Renderer) drawCell(screen *ebiten.Image, x, y int, clr color.Color) {
 	opts := &ebiten.DrawImageOptions{}
 	opts.GeoM.Translate(float64(x*r.cellSize), float64(y*r.cellSize))
 	screen.DrawImage(rect, opts)
+}
+
+func (r *Renderer) SetCellSize(size int) {
+	r.cellSize = size
 }

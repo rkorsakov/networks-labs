@@ -117,15 +117,37 @@ func (g *Game) handleInput() {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.updateCellSize()
 	g.renderer.Draw(screen)
 }
 
+func (g *Game) updateCellSize() {
+	if g.renderer != nil && g.logic != nil {
+		field := g.logic.GetField()
+		if field != nil {
+			width, height := ebiten.WindowSize()
+			cellWidth := width / int(field.Width)
+			cellHeight := height / int(field.Height)
+			cellSize := min(cellWidth, cellHeight)
+			g.renderer.SetCellSize(cellSize)
+		}
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func (g *Game) Layout(width, height int) (int, int) {
+	g.updateCellSize()
 	return width, height
 }
 
 func (g *Game) Start() {
-	ebiten.SetWindowSize(800, 600)
+	ebiten.SetWindowSize(600, 600)
 	ebiten.SetWindowTitle("Snake Game")
 
 	for {
