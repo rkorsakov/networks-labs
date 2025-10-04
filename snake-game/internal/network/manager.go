@@ -170,15 +170,12 @@ func (m *Manager) Close() {
 	close(m.closeChan)
 	if m.announceTicker != nil {
 		m.announceTicker.Stop()
-		m.announceTicker = nil
 	}
 	if m.unicastConn != nil {
 		m.unicastConn.Close()
-		m.unicastConn = nil
 	}
 	if m.multicastConn != nil {
 		m.multicastConn.Close()
-		m.multicastConn = nil
 	}
 	m.wg.Wait()
 }
