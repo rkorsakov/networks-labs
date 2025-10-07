@@ -107,7 +107,11 @@ func (m *Manager) setupMulticastSocket() error {
 	if err != nil {
 		return err
 	}
-	conn, err := net.ListenMulticastUDP("udp", nil, groupAddr)
+	iface, err := net.InterfaceByName("Беспроводная сеть")
+	if err != nil {
+		return err
+	}
+	conn, err := net.ListenMulticastUDP("udp", iface, groupAddr)
 	if err != nil {
 		return err
 	}
