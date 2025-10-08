@@ -11,7 +11,7 @@ func (gl *GameLogic) placeSnakes() {
 func (gl *GameLogic) placeSnake(player *proto.GamePlayer) {
 	for attempt := 0; attempt < 100; attempt++ {
 		head := gl.field.GetRandomPosition(gl.rnd)
-		if gl.IsFoodAtPosition(head) {
+		if gl.isFoodAtPosition(head) {
 			continue
 		}
 		directions := []proto.Direction{
@@ -29,7 +29,7 @@ func (gl *GameLogic) placeSnake(player *proto.GamePlayer) {
 		for _, dir := range directions {
 			tail = gl.getTailPosition(head, dir)
 			tail = gl.field.WrapPosition(tail)
-			if !gl.IsFoodAtPosition(tail) {
+			if !gl.isFoodAtPosition(tail) {
 				selectedDirection = dir
 				found = true
 				break
