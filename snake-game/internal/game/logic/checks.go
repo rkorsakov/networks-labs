@@ -19,27 +19,20 @@ func (gl *GameLogic) isReverseDirection(current, new proto.Direction) bool {
 }
 
 func (gl *GameLogic) CanPlaceSnake() bool {
-	for x := int32(0); x < gl.GetField().Width-4; x++ {
-		for y := int32(0); y < gl.GetField().Height-4; y++ {
+	field := gl.GetField()
+	snakes := gl.GetSnakes()
+	foods := gl.GetFoods()
+	for x := int32(0); x < field.Width-4; x++ {
+		for y := int32(0); y < field.Height-4; y++ {
 			squareEmpty := true
 			for i := x; i < x+5; i++ {
 				for j := y; j < y+5; j++ {
 					coord := &proto.GameState_Coord{
-						X: i % gl.GetField().Width,
-						Y: j % gl.GetField().Height,
+						X: i % field.Width,
+						Y: j % field.Height,
 					}
-					for _, snake := range gl.GetSnakes() {
-						for _, point := range snake.Points {
-							if point.X == coord.X && point.Y == coord.Y {
-								squareEmpty = false
-								break
-							}
-						}
-						if !squareEmpty {
-							break
-						}
-					}
-					if !squareEmpty {
+					if !field.IsPositionEmpty(coord, snakes, foods) {
+						squareEmpty = false
 						break
 					}
 				}
@@ -48,9 +41,10 @@ func (gl *GameLogic) CanPlaceSnake() bool {
 				}
 			}
 			if squareEmpty {
-				centerX := x + 2
-				centerY := y + 2
-				centerCoord := &proto.GameState_Coord{X: centerX, Y: centerY}
+				centerCoord := &proto.GameState_Coord{
+					X: (x + 2) % field.Width,
+					Y: (y + 2) % field.Height,
+				}
 				if !gl.isFoodAtPosition(centerCoord) {
 					return true
 				}
