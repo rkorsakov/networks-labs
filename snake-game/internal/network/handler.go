@@ -57,9 +57,43 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 
 func (m *Manager) handlePing(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
-func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {
+	if m.role != prt.NodeRole_MASTER {
+		return
+	}
+	steerMsg := msg.GetSteer()
+	if steerMsg == nil {
+		return
+	}
+	senderID := msg.GetSenderId()
+	if senderID == 0 {
+		log.Printf("Steer message without sender ID from %s", addr)
+		return
+	}
+	direction := steerMsg.GetDirection()
+	playerExists := false
+	for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
+		if player.GetId() == senderID {
+			playerExists = true
+			break
+		}
+	}
+	if !playerExists {
+		log.Printf("Steer message from unknown player ID: %d", senderID)
+		return
+	}
+	if m.steerListener != nil {
+		err := m.steerListener.OnSteerReceived(senderID, direction)
+		if err != nil {
+			log.Printf("Error steering snake for player %d: %v", senderID, err)
+		} else {
+			log.Printf("Applied steer for player %d: %v", senderID, direction)
+		}
+	}
+}
 
-func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleAck(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 	if m.msgSeq != msg.MsgSeq {
 		return
 	}
@@ -75,9 +109,12 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleDiscovery(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
+}
 
-func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleJoin(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
@@ -116,7 +153,8 @@ func (m *Manager) handleState(msg *prt.GameMessage) {
 	}
 }
 
-func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleAnnouncement(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 	games := msg.GetAnnouncement().GetGames()
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -134,6 +172,10 @@ func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleError(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
+}
 
-func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {}
+func (m *Manager) handleRoleChange(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
+}

@@ -13,3 +13,7 @@ type GameStateListener interface {
 type GameJoinListener interface {
 	OnGameAddPlayer(player *prt.GamePlayer)
 }
+
+type SteerListener interface {
+	OnSteerReceived(playerID int32, direction prt.Direction) error
+}

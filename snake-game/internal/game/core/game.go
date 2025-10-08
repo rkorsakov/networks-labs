@@ -34,6 +34,7 @@ func NewGame() *Game {
 	game.networkMgr.SetGameAnnouncementListener(game)
 	game.networkMgr.SetGameStateListener(game)
 	game.networkMgr.SetGameJoinListener(game)
+	game.networkMgr.SetSteerListener(game)
 	if err := game.networkMgr.Start(); err != nil {
 		log.Printf("Failed to start network manager: %v", err)
 	}
@@ -50,6 +51,10 @@ func (g *Game) OnGameStateReceived(state *proto.GameState) {
 
 func (g *Game) OnGameAddPlayer(player *proto.GamePlayer) {
 	g.logic.AddPlayer(player)
+}
+
+func (g *Game) OnSteerReceived(playerID int32, direction proto.Direction) error {
+	return g.logic.SteerSnake(playerID, direction)
 }
 
 func (g *Game) Update() error {
@@ -90,33 +95,42 @@ func (g *Game) cleanup() {
 }
 
 func (g *Game) handleInput() {
-	if g.networkMgr.GetRole() == proto.NodeRole_MASTER {
-		var newDirection proto.Direction
-		keyPressed := false
-		if inpututil.IsKeyJustPressed(ebiten.KeyW) || inpututil.IsKeyJustPressed(ebiten.KeyUp) {
-			newDirection = proto.Direction_UP
-			keyPressed = true
-		} else if inpututil.IsKeyJustPressed(ebiten.KeyS) || inpututil.IsKeyJustPressed(ebiten.KeyDown) {
-			newDirection = proto.Direction_DOWN
-			keyPressed = true
-		} else if inpututil.IsKeyJustPressed(ebiten.KeyA) || inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
-			newDirection = proto.Direction_LEFT
-			keyPressed = true
-		} else if inpututil.IsKeyJustPressed(ebiten.KeyD) || inpututil.IsKeyJustPressed(ebiten.KeyRight) {
-			newDirection = proto.Direction_RIGHT
-			keyPressed = true
-		}
-		var masterPlayerID int32
-		for _, val := range g.logic.GetPlayers().GetPlayers() {
-			if val.GetRole() == proto.NodeRole_MASTER {
-				masterPlayerID = val.GetId()
+	var newDirection proto.Direction
+	keyPressed := false
+	if inpututil.IsKeyJustPressed(ebiten.KeyW) || inpututil.IsKeyJustPressed(ebiten.KeyUp) {
+		newDirection = proto.Direction_UP
+		keyPressed = true
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyS) || inpututil.IsKeyJustPressed(ebiten.KeyDown) {
+		newDirection = proto.Direction_DOWN
+		keyPressed = true
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyA) || inpututil.IsKeyJustPressed(ebiten.KeyLeft) {
+		newDirection = proto.Direction_LEFT
+		keyPressed = true
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyD) || inpututil.IsKeyJustPressed(ebiten.KeyRight) {
+		newDirection = proto.Direction_RIGHT
+		keyPressed = true
+	}
+	if keyPressed {
+		if g.networkMgr.GetRole() == proto.NodeRole_MASTER {
+			var masterPlayerID int32
+			for _, val := range g.logic.GetPlayers().GetPlayers() {
+				if val.GetRole() == proto.NodeRole_MASTER {
+					masterPlayerID = val.GetId()
+					break
+				}
 			}
-		}
-		if keyPressed {
-			err := g.logic.SteerSnake(masterPlayerID, newDirection)
+			err := g.OnSteerReceived(masterPlayerID, newDirection)
 			if err != nil {
-				log.Fatal(err)
+				log.Printf("Error steering master snake: %v", err)
+			} else {
+				log.Printf("Master steered snake: %v", newDirection)
 			}
+		} else if g.networkMgr.GetRole() == proto.NodeRole_NORMAL {
+			g.networkMgr.SendSteer(newDirection)
+			log.Printf("Sent steer to master: %v", newDirection)
+		} else if g.networkMgr.GetRole() == proto.NodeRole_DEPUTY {
+			g.networkMgr.SendSteer(newDirection)
+			log.Printf("Sent steer to master: %v", newDirection)
 		}
 	}
 }

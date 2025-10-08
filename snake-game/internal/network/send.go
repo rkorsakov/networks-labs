@@ -84,6 +84,26 @@ func (m *Manager) SendState(gameState *prt.GameState) error {
 		if err != nil {
 			log.Printf("Error sending state: %v", err)
 		}
+		m.msgSeq++
 	}
 	return nil
+}
+
+func (m *Manager) SendSteer(dir prt.Direction) {
+	steerMsg := &prt.GameMessage_SteerMsg{Direction: dir}
+	msg := &prt.GameMessage{
+		MsgSeq:   m.msgSeq,
+		Type:     &prt.GameMessage_Steer{Steer: steerMsg},
+		SenderId: m.playerID,
+	}
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling message: %v", err)
+	}
+	gameInfo, _ := m.AvailableGames[m.gameAnnounce.GameName]
+	_, err = m.unicastConn.WriteToUDP(data, gameInfo.MasterAddr)
+	if err != nil {
+		log.Printf("Error sending steer: %v", err)
+	}
+	m.msgSeq++
 }
