@@ -122,15 +122,11 @@ func (g *Game) handleInput() {
 			err := g.OnSteerReceived(masterPlayerID, newDirection)
 			if err != nil {
 				log.Printf("Error steering master snake: %v", err)
-			} else {
-				log.Printf("Master steered snake: %v", newDirection)
 			}
 		} else if g.networkMgr.GetRole() == proto.NodeRole_NORMAL {
 			g.networkMgr.SendSteer(newDirection)
-			log.Printf("Sent steer to master: %v", newDirection)
 		} else if g.networkMgr.GetRole() == proto.NodeRole_DEPUTY {
 			g.networkMgr.SendSteer(newDirection)
-			log.Printf("Sent steer to master: %v", newDirection)
 		}
 	}
 }

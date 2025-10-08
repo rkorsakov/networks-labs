@@ -21,7 +21,6 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handlePing(&msg, addr)
 
 	case msg.GetSteer() != nil:
-		log.Println("Got STEER message")
 		m.handleSteer(&msg, addr)
 
 	case msg.GetAck() != nil:
@@ -67,7 +66,6 @@ func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 	senderID := msg.GetSenderId()
 	if senderID == 0 {
-		log.Printf("Steer message without sender ID from %s", addr)
 		return
 	}
 	direction := steerMsg.GetDirection()
@@ -86,13 +84,13 @@ func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {
 		err := m.steerListener.OnSteerReceived(senderID, direction)
 		if err != nil {
 			log.Printf("Error steering snake for player %d: %v", senderID, err)
-		} else {
-			log.Printf("Applied steer for player %d: %v", senderID, direction)
 		}
 	}
 }
 
-func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleAck(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
+	m.playerID = msg.GetReceiverId()
 	if m.msgSeq != msg.MsgSeq {
 		return
 	}
@@ -108,10 +106,12 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleDiscovery(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 }
 
-func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleJoin(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
@@ -150,7 +150,8 @@ func (m *Manager) handleState(msg *prt.GameMessage) {
 	}
 }
 
-func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleAnnouncement(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 	games := msg.GetAnnouncement().GetGames()
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -168,8 +169,10 @@ func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleError(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 }
 
-func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleRoleChange(msg *prt.GameMessage,
+	addr *net.UDPAddr) {
 }
