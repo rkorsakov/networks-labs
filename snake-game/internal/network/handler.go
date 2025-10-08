@@ -126,7 +126,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		newPlayerID = logic.GeneratePlayerID()
 	}
 	lgc := m.joinListener.GetLogic()
-	if !m.canPlaceSnake(lgc) {
+	if !lgc.CanPlaceSnake() {
 		errorMsg := &prt.GameMessage_ErrorMsg{
 			ErrorMessage: "Cannot find suitable position for new snake",
 		}
@@ -186,50 +186,8 @@ func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {
+
 }
 
 func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {
-}
-
-func (m *Manager) canPlaceSnake(logic *logic.GameLogic) bool {
-	for x := int32(0); x < logic.GetField().Width-4; x++ {
-		for y := int32(0); y < logic.GetField().Height-4; y++ {
-			squareEmpty := true
-			for i := x; i < x+5; i++ {
-				for j := y; j < y+5; j++ {
-					coord := &prt.GameState_Coord{
-						X: i % logic.GetField().Width,
-						Y: j % logic.GetField().Height,
-					}
-					// Проверяем нет ли змеек в этой клетке
-					for _, snake := range logic.GetSnakes() {
-						for _, point := range snake.Points {
-							if point.X == coord.X && point.Y == coord.Y {
-								squareEmpty = false
-								break
-							}
-						}
-						if !squareEmpty {
-							break
-						}
-					}
-					if !squareEmpty {
-						break
-					}
-				}
-				if !squareEmpty {
-					break
-				}
-			}
-			if squareEmpty {
-				centerX := x + 2
-				centerY := y + 2
-				centerCoord := &prt.GameState_Coord{X: centerX, Y: centerY}
-				if !logic.IsFoodAtPosition(centerCoord) {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
