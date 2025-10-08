@@ -100,7 +100,7 @@ func (m *Manager) SendSteer(dir prt.Direction) {
 	if err != nil {
 		log.Printf("Error marshaling message: %v", err)
 	}
-	gameInfo, _ := m.AvailableGames[m.gameAnnounce.GameName]
+	gameInfo, _ := m.AvailableGames[m.currentGameName]
 	_, err = m.unicastConn.WriteToUDP(data, gameInfo.MasterAddr)
 	if err != nil {
 		log.Printf("Error sending steer: %v", err)

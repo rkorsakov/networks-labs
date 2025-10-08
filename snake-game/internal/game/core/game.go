@@ -231,6 +231,7 @@ func (g *Game) joinGame() {
 	cfg := targetGame.Config
 	g.logic = logic.NewGameLogic(cfg)
 	playerName := g.ui.ReadPlayerName()
+	g.networkMgr.SetCurrentGame(gameName)
 	err := g.networkMgr.SendJoinRequest(proto.PlayerType_HUMAN, playerName, gameName, playerRole)
 	if err != nil {
 		fmt.Printf("Failed to send join request: %v\n", err)
