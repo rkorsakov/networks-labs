@@ -41,32 +41,9 @@ func (f *Field) WrapPosition(coord *proto.GameState_Coord) *proto.GameState_Coor
 	return &proto.GameState_Coord{X: x, Y: y}
 }
 
-func (f *Field) GetCenter() *proto.GameState_Coord {
-	return &proto.GameState_Coord{
-		X: f.Width / 2,
-		Y: f.Height / 2,
-	}
-}
-
 func (f *Field) GetRandomPosition(rnd *rand.Rand) *proto.GameState_Coord {
 	return &proto.GameState_Coord{
 		X: int32(rnd.IntN(int(f.Width))),
 		Y: int32(rnd.IntN(int(f.Height))),
 	}
-}
-
-func (f *Field) IsPositionEmpty(coord *proto.GameState_Coord, snakes []*proto.GameState_Snake, foods []*proto.GameState_Coord) bool {
-	for _, food := range foods {
-		if food.X == coord.X && food.Y == coord.Y {
-			return false
-		}
-	}
-	for _, snake := range snakes {
-		for _, point := range snake.Points {
-			if point.X == coord.X && point.Y == coord.Y {
-				return false
-			}
-		}
-	}
-	return true
 }
