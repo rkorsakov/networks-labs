@@ -88,8 +88,7 @@ func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleAck(msg *prt.GameMessage,
-	addr *net.UDPAddr) {
+func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 	m.playerID = msg.GetReceiverId()
 	if m.msgSeq != msg.MsgSeq {
 		return
@@ -106,8 +105,7 @@ func (m *Manager) handleAck(msg *prt.GameMessage,
 	}
 }
 
-func (m *Manager) handleDiscovery(msg *prt.GameMessage,
-	addr *net.UDPAddr) {
+func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleJoin(msg *prt.GameMessage,
@@ -150,8 +148,7 @@ func (m *Manager) handleState(msg *prt.GameMessage) {
 	}
 }
 
-func (m *Manager) handleAnnouncement(msg *prt.GameMessage,
-	addr *net.UDPAddr) {
+func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	games := msg.GetAnnouncement().GetGames()
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -169,10 +166,8 @@ func (m *Manager) handleAnnouncement(msg *prt.GameMessage,
 	}
 }
 
-func (m *Manager) handleError(msg *prt.GameMessage,
-	addr *net.UDPAddr) {
+func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
-func (m *Manager) handleRoleChange(msg *prt.GameMessage,
-	addr *net.UDPAddr) {
+func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
