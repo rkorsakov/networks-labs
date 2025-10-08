@@ -219,7 +219,7 @@ func (g *Game) joinGame() {
 	gameName, playerRole := g.ui.ReadJoinInfo()
 	var targetGame *proto.GameAnnouncement
 	for name, gameInfo := range g.networkMgr.AvailableGames {
-		if gameName == name {
+		if gameName == name && gameInfo.Announcement.CanJoin {
 			targetGame = gameInfo.Announcement
 			break
 		}
@@ -237,6 +237,10 @@ func (g *Game) joinGame() {
 		return
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
+	time.Sleep(3 * time.Second)
+	if !targetGame.CanJoin {
+		return
+	}
 	g.renderer = graphics.NewRenderer(g.logic)
 	g.networkMgr.SetGameAnnouncement(targetGame)
 	fmt.Printf("Attempting to join as %s...\n", playerRole)

@@ -126,6 +126,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 	lgc := m.joinListener.GetLogic()
 	if !lgc.CanPlaceSnake() {
+		m.gameAnnounce.CanJoin = false
 		errorMsg := &prt.GameMessage_ErrorMsg{
 			ErrorMessage: "Cannot find suitable position for new snake",
 		}
