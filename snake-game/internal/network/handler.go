@@ -38,8 +38,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handleJoin(&msg, addr)
 
 	case msg.GetError() != nil:
-		log.Println("Got ERROR message")
-		m.handleError(&msg, addr)
+		m.handleError(&msg)
 
 	case msg.GetRoleChange() != nil:
 		log.Println("Got ROLE_CHANGE message")
@@ -143,7 +142,6 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		if err != nil {
 			log.Printf("Error sending error message: %v", err)
 		}
-		log.Printf("Sent error message to %s: cannot place snake", addr)
 		return
 	}
 	player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
@@ -185,8 +183,8 @@ func (m *Manager) handleAnnouncement(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 }
 
-func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {
-
+func (m *Manager) handleError(msg *prt.GameMessage) {
+	fmt.Println(msg.GetError())
 }
 
 func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {
