@@ -227,16 +227,15 @@ func (g *Game) joinGame() {
 	cfg := targetGame.Config
 	g.logic = logic.NewGameLogic(cfg)
 	playerName := g.ui.ReadPlayerName()
-	g.networkMgr.SetCurrentGame(gameName)
 	err := g.networkMgr.SendJoinRequest(proto.PlayerType_HUMAN, playerName, gameName, playerRole)
 	if err != nil {
 		fmt.Printf("Failed to send join request: %v\n", err)
 		return
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
-	time.Sleep(3 * time.Second)
 	g.renderer = graphics.NewRenderer(g.logic)
-	fmt.Printf("Successfully joined game! Starting as %s...\n", playerRole)
+	g.networkMgr.SetGameAnnouncement(targetGame)
+	fmt.Printf("Attempting to join as %s...\n", playerRole)
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}

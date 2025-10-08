@@ -15,24 +15,23 @@ const (
 )
 
 type Manager struct {
-	unicastConn     *net.UDPConn
-	multicastConn   *net.UDPConn
-	role            prt.NodeRole
-	msgSeq          int64
-	gameAnnounce    *prt.GameAnnouncement
-	ui              *ui.ConsoleUI
-	announceTicker  *time.Ticker
-	currentGameName string
-	gameListener    interfaces.GameAnnouncementListener
-	stateListener   interfaces.GameStateListener
-	joinListener    interfaces.GameJoinListener
-	steerListener   interfaces.SteerListener
-	AvailableGames  map[string]*GameInfo
-	playerID        int32
-	mu              sync.Mutex
-	closeMutex      sync.Mutex
-	closeChan       chan struct{}
-	wg              sync.WaitGroup
+	unicastConn    *net.UDPConn
+	multicastConn  *net.UDPConn
+	role           prt.NodeRole
+	msgSeq         int64
+	gameAnnounce   *prt.GameAnnouncement
+	ui             *ui.ConsoleUI
+	announceTicker *time.Ticker
+	gameListener   interfaces.GameAnnouncementListener
+	stateListener  interfaces.GameStateListener
+	joinListener   interfaces.GameJoinListener
+	steerListener  interfaces.SteerListener
+	AvailableGames map[string]*GameInfo
+	playerID       int32
+	mu             sync.Mutex
+	closeMutex     sync.Mutex
+	closeChan      chan struct{}
+	wg             sync.WaitGroup
 }
 
 type GameInfo struct {
@@ -194,6 +193,6 @@ func (m *Manager) GetID() int32 {
 	return m.playerID
 }
 
-func (m *Manager) SetCurrentGame(gameName string) {
-	m.currentGameName = gameName
+func (m *Manager) SetGameAnnouncement(gameAnnounce *prt.GameAnnouncement) {
+	m.gameAnnounce = gameAnnounce
 }
