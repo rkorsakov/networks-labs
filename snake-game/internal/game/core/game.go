@@ -58,11 +58,11 @@ func (g *Game) OnSteerReceived(playerID int32, direction proto.Direction) error 
 }
 
 func (g *Game) Update() error {
+	if ebiten.IsWindowBeingClosed() {
+		return g.initiateShutdown()
+	}
+	g.handleInput()
 	if g.networkMgr.GetRole() == proto.NodeRole_MASTER {
-		if ebiten.IsWindowBeingClosed() {
-			return g.initiateShutdown()
-		}
-		g.handleInput()
 		now := time.Now()
 		interval := time.Duration(g.logic.Config.StateDelayMs) * time.Millisecond
 		if now.Sub(g.lastUpdate) >= interval {
