@@ -1,6 +1,9 @@
 package interfaces
 
-import prt "snake-game/internal/proto/gen"
+import (
+	"snake-game/internal/game/logic"
+	prt "snake-game/internal/proto/gen"
+)
 
 type GameAnnouncementListener interface {
 	OnGameAnnouncement(games []*prt.GameAnnouncement)
@@ -12,6 +15,7 @@ type GameStateListener interface {
 
 type GameJoinListener interface {
 	OnGameAddPlayer(player *prt.GamePlayer)
+	GetLogic() *logic.GameLogic
 }
 
 type SteerListener interface {

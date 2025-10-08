@@ -57,6 +57,10 @@ func (g *Game) OnSteerReceived(playerID int32, direction proto.Direction) error 
 	return g.logic.SteerSnake(playerID, direction)
 }
 
+func (g *Game) GetLogic() *logic.GameLogic {
+	return g.logic
+}
+
 func (g *Game) Update() error {
 	if ebiten.IsWindowBeingClosed() {
 		return g.initiateShutdown()

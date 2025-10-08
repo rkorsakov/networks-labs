@@ -108,8 +108,7 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
-func (m *Manager) handleJoin(msg *prt.GameMessage,
-	addr *net.UDPAddr) {
+func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
@@ -126,6 +125,27 @@ func (m *Manager) handleJoin(msg *prt.GameMessage,
 		}
 		newPlayerID = logic.GeneratePlayerID()
 	}
+	lgc := m.joinListener.GetLogic()
+	if !m.canPlaceSnake(lgc) {
+		errorMsg := &prt.GameMessage_ErrorMsg{
+			ErrorMessage: "Cannot find suitable position for new snake",
+		}
+		message := &prt.GameMessage{
+			MsgSeq: msg.GetMsgSeq(),
+			Type:   &prt.GameMessage_Error{Error: errorMsg},
+		}
+		data, err := proto.Marshal(message)
+		if err != nil {
+			log.Printf("Error marshaling error message: %v", err)
+			return
+		}
+		_, err = m.unicastConn.WriteToUDP(data, addr)
+		if err != nil {
+			log.Printf("Error sending error message: %v", err)
+		}
+		log.Printf("Sent error message to %s: cannot place snake", addr)
+		return
+	}
 	player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
 	m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
 	m.joinListener.OnGameAddPlayer(player)
@@ -138,7 +158,6 @@ func (m *Manager) handleJoin(msg *prt.GameMessage,
 	if err != nil {
 		fmt.Printf("Error writing message: %v", err)
 	}
-
 }
 
 func (m *Manager) handleState(msg *prt.GameMessage) {
@@ -170,4 +189,47 @@ func (m *Manager) handleError(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {
+}
+
+func (m *Manager) canPlaceSnake(logic *logic.GameLogic) bool {
+	for x := int32(0); x < logic.GetField().Width-4; x++ {
+		for y := int32(0); y < logic.GetField().Height-4; y++ {
+			squareEmpty := true
+			for i := x; i < x+5; i++ {
+				for j := y; j < y+5; j++ {
+					coord := &prt.GameState_Coord{
+						X: i % logic.GetField().Width,
+						Y: j % logic.GetField().Height,
+					}
+					// Проверяем нет ли змеек в этой клетке
+					for _, snake := range logic.GetSnakes() {
+						for _, point := range snake.Points {
+							if point.X == coord.X && point.Y == coord.Y {
+								squareEmpty = false
+								break
+							}
+						}
+						if !squareEmpty {
+							break
+						}
+					}
+					if !squareEmpty {
+						break
+					}
+				}
+				if !squareEmpty {
+					break
+				}
+			}
+			if squareEmpty {
+				centerX := x + 2
+				centerY := y + 2
+				centerCoord := &prt.GameState_Coord{X: centerX, Y: centerY}
+				if !logic.IsFoodAtPosition(centerCoord) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

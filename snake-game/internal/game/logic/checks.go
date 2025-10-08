@@ -2,7 +2,7 @@ package logic
 
 import proto "snake-game/internal/proto/gen"
 
-func (gl *GameLogic) isFoodAtPosition(coord *proto.GameState_Coord) bool {
+func (gl *GameLogic) IsFoodAtPosition(coord *proto.GameState_Coord) bool {
 	for _, food := range gl.state.Foods {
 		if food.X == coord.X && food.Y == coord.Y {
 			return true
