@@ -46,7 +46,7 @@ func (gl *GameLogic) Init() {
 
 func (gl *GameLogic) Update() error {
 	for playerID, newDirection := range gl.pendingSteers {
-		if snake := gl.getSnakeByPlayerID(playerID); snake != nil && snake.State == proto.GameState_Snake_ALIVE {
+		if snake := gl.GetSnakeByPlayerID(playerID); snake != nil && snake.State == proto.GameState_Snake_ALIVE {
 			currentDir := snake.HeadDirection
 			if !gl.isReverseDirection(currentDir, newDirection) {
 				snake.HeadDirection = newDirection
@@ -97,6 +97,9 @@ func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
 		if food.X == newHead.X && food.Y == newHead.Y {
 			ateFood = true
 			gl.state.Foods = append(gl.state.Foods[:i], gl.state.Foods[i+1:]...)
+			if player, err := gl.GetPlayer(snake.PlayerId); err == nil {
+				player.Score++
+			}
 			break
 		}
 	}
@@ -129,14 +132,12 @@ func (gl *GameLogic) checkCollisions() {
 			bodyCoords[bodyKey] = struct{}{}
 		}
 	}
-
+	collidedWith := make(map[int32][]int32)
 	for headKey, playerID := range headCoords {
-
 		if _, exists := bodyCoords[headKey]; exists {
 			collisions[playerID] = true
 			continue
 		}
-
 		for otherHeadKey, otherPlayerID := range headCoords {
 			if playerID == otherPlayerID {
 				continue
@@ -144,13 +145,23 @@ func (gl *GameLogic) checkCollisions() {
 			if headKey.X == otherHeadKey.X && headKey.Y == otherHeadKey.Y {
 				collisions[playerID] = true
 				collisions[otherPlayerID] = true
+				collidedWith[playerID] = append(collidedWith[playerID], otherPlayerID)
+				collidedWith[otherPlayerID] = append(collidedWith[otherPlayerID], playerID)
 				break
 			}
 		}
 	}
 
+	for killerID, victims := range collidedWith {
+		if snake := gl.GetSnakeByPlayerID(killerID); snake != nil && snake.State == proto.GameState_Snake_ALIVE {
+			if player, err := gl.GetPlayer(killerID); err == nil {
+				player.Score += int32(len(victims))
+			}
+		}
+	}
+
 	for playerID := range collisions {
-		if snake := gl.getSnakeByPlayerID(playerID); snake != nil {
+		if snake := gl.GetSnakeByPlayerID(playerID); snake != nil {
 			snake.State = proto.GameState_Snake_ZOMBIE
 
 			for _, point := range snake.Points {
@@ -226,13 +237,13 @@ func (gl *GameLogic) RemovePlayer(playerID int32) {
 			break
 		}
 	}
-	if snake := gl.getSnakeByPlayerID(playerID); snake != nil {
+	if snake := gl.GetSnakeByPlayerID(playerID); snake != nil {
 		snake.State = proto.GameState_Snake_ZOMBIE
 	}
 }
 
 func (gl *GameLogic) SteerSnake(playerID int32, direction proto.Direction) error {
-	snake := gl.getSnakeByPlayerID(playerID)
+	snake := gl.GetSnakeByPlayerID(playerID)
 	if snake == nil {
 		return fmt.Errorf("snake for player %d not found", playerID)
 	}
@@ -240,15 +251,6 @@ func (gl *GameLogic) SteerSnake(playerID int32, direction proto.Direction) error
 		return fmt.Errorf("snake is ZOMBIE")
 	}
 	gl.pendingSteers[playerID] = direction
-	return nil
-}
-
-func (gl *GameLogic) getSnakeByPlayerID(playerID int32) *proto.GameState_Snake {
-	for _, snake := range gl.state.Snakes {
-		if snake.PlayerId == playerID {
-			return snake
-		}
-	}
 	return nil
 }
 

@@ -29,3 +29,12 @@ func (gl *GameLogic) GetPlayers() *proto.GamePlayers {
 func (gl *GameLogic) GetState() *proto.GameState {
 	return gl.state
 }
+
+func (gl *GameLogic) GetSnakeByPlayerID(playerID int32) *proto.GameState_Snake {
+	for _, snake := range gl.state.Snakes {
+		if snake.PlayerId == playerID {
+			return snake
+		}
+	}
+	return nil
+}
