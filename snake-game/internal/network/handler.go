@@ -146,7 +146,6 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		return
 	}
 	player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
-	m.gameAnnounce.Players.Players = append(m.gameAnnounce.Players.Players, player)
 	m.joinListener.OnGameAddPlayer(player)
 	message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
 	data, err := proto.Marshal(message)
