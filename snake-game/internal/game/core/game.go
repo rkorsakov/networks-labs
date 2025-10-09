@@ -244,14 +244,15 @@ func (g *Game) joinGame() {
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
 	time.Sleep(3 * time.Second)
-	if !targetGame.CanJoin {
+	if g.networkMgr.GetID() != 0 {
+		g.renderer = graphics.NewRenderer(g.logic)
+		g.networkMgr.SetGameAnnouncement(targetGame)
+		fmt.Printf("Attempting to join as %s...\n", playerRole)
+		if err := ebiten.RunGame(g); err != nil {
+			log.Fatal(err)
+		}
+	} else {
 		return
-	}
-	g.renderer = graphics.NewRenderer(g.logic)
-	g.networkMgr.SetGameAnnouncement(targetGame)
-	fmt.Printf("Attempting to join as %s...\n", playerRole)
-	if err := ebiten.RunGame(g); err != nil {
-		log.Fatal(err)
 	}
 }
 

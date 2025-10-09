@@ -112,18 +112,6 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		return
 	}
 	joinMsg := msg.GetJoin()
-	ackMsg := &prt.GameMessage_AckMsg{}
-	ids := make(map[int32]struct{})
-	for _, val := range m.gameAnnounce.GetPlayers().Players {
-		ids[val.Id] = struct{}{}
-	}
-	newPlayerID := logic.GeneratePlayerID()
-	for {
-		if _, exists := ids[newPlayerID]; !exists {
-			break
-		}
-		newPlayerID = logic.GeneratePlayerID()
-	}
 	lgc := m.joinListener.GetLogic()
 	if !lgc.CanPlaceSnake() {
 		m.gameAnnounce.CanJoin = false
@@ -144,6 +132,18 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 			log.Printf("Error sending error message: %v", err)
 		}
 		return
+	}
+	ackMsg := &prt.GameMessage_AckMsg{}
+	ids := make(map[int32]struct{})
+	for _, val := range m.gameAnnounce.GetPlayers().Players {
+		ids[val.Id] = struct{}{}
+	}
+	newPlayerID := logic.GeneratePlayerID()
+	for {
+		if _, exists := ids[newPlayerID]; !exists {
+			break
+		}
+		newPlayerID = logic.GeneratePlayerID()
 	}
 	player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
 	m.joinListener.OnGameAddPlayer(player)
