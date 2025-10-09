@@ -16,13 +16,14 @@ import (
 )
 
 type Game struct {
-	logic       *logic.GameLogic
-	renderer    *graphics.Renderer
-	lastUpdate  time.Time
-	ui          *ui.ConsoleUI
-	games       []*proto.GameAnnouncement
-	networkMgr  *network.Manager
-	cleanupDone bool
+	logic           *logic.GameLogic
+	renderer        *graphics.Renderer
+	lastUpdate      time.Time
+	lastScoreUpdate time.Time
+	ui              *ui.ConsoleUI
+	games           []*proto.GameAnnouncement
+	networkMgr      *network.Manager
+	cleanupDone     bool
 }
 
 func NewGame() *Game {
@@ -80,7 +81,11 @@ func (g *Game) Update() error {
 			}
 		}
 	}
-	ui.ShowScores(g.logic)
+	now := time.Now()
+	if now.Sub(g.lastScoreUpdate) >= 350*time.Millisecond {
+		ui.ShowScores(g.logic)
+		g.lastScoreUpdate = now
+	}
 	return nil
 }
 
