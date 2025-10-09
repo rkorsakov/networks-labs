@@ -82,7 +82,7 @@ func (g *Game) Update() error {
 		}
 	}
 	now := time.Now()
-	if now.Sub(g.lastScoreUpdate) >= 350*time.Millisecond {
+	if now.Sub(g.lastScoreUpdate) >= 250*time.Millisecond {
 		ui.ShowScores(g.logic)
 		g.lastScoreUpdate = now
 	}
