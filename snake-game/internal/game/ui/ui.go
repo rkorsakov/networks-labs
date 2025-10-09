@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"snake-game/internal/game/logic"
 	proto "snake-game/internal/proto/gen"
 	"strconv"
 	"strings"
@@ -137,4 +138,39 @@ func (ui *ConsoleUI) readStringInput() string {
 		}
 	}
 	return ""
+}
+
+func ShowScores(logic *logic.GameLogic) {
+	players := logic.GetPlayers().GetPlayers()
+	if len(players) == 0 {
+		return
+	}
+
+	fmt.Print("\033[H\033[2J")
+
+	fmt.Println("=== SNAKE GAME SCORES ===")
+	fmt.Println("Player Name          | Score | Status")
+	fmt.Println("---------------------|-------|--------")
+
+	for _, player := range players {
+		status := "ALIVE"
+		if snake := logic.GetSnakeByPlayerID(player.Id); snake != nil {
+			if snake.State == proto.GameState_Snake_ZOMBIE {
+				status = "ZOMBIE"
+			}
+		}
+
+		role := ""
+		switch player.Role {
+		case proto.NodeRole_MASTER:
+			role = " [MASTER]"
+		case proto.NodeRole_DEPUTY:
+			role = " [DEPUTY]"
+		case proto.NodeRole_VIEWER:
+			role = " [VIEWER]"
+		}
+
+		fmt.Printf("%-20s | %5d | %s%s\n", player.Name, player.Score, status, role)
+	}
+	fmt.Println("---------------------|-------|--------")
 }

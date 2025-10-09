@@ -80,7 +80,7 @@ func (g *Game) Update() error {
 			}
 		}
 	}
-	g.printScores()
+	ui.ShowScores(g.logic)
 	return nil
 }
 
@@ -252,39 +252,4 @@ func (g *Game) joinGame() {
 
 func (g *Game) showGames() {
 	g.ui.ShowGameList(g.games)
-}
-
-func (g *Game) printScores() {
-	players := g.logic.GetPlayers().GetPlayers()
-	if len(players) == 0 {
-		return
-	}
-
-	fmt.Print("\033[H\033[2J")
-
-	fmt.Println("=== SNAKE GAME SCORES ===")
-	fmt.Println("Player Name          | Score | Status")
-	fmt.Println("---------------------|-------|--------")
-
-	for _, player := range players {
-		status := "ALIVE"
-		if snake := g.logic.GetSnakeByPlayerID(player.Id); snake != nil {
-			if snake.State == proto.GameState_Snake_ZOMBIE {
-				status = "ZOMBIE"
-			}
-		}
-
-		role := ""
-		switch player.Role {
-		case proto.NodeRole_MASTER:
-			role = " [MASTER]"
-		case proto.NodeRole_DEPUTY:
-			role = " [DEPUTY]"
-		case proto.NodeRole_VIEWER:
-			role = " [VIEWER]"
-		}
-
-		fmt.Printf("%-20s | %5d | %s%s\n", player.Name, player.Score, status, role)
-	}
-	fmt.Println("---------------------|-------|--------")
 }
