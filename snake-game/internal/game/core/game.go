@@ -237,23 +237,26 @@ func (g *Game) joinGame() {
 	cfg := targetGame.Config
 	g.logic = logic.NewGameLogic(cfg)
 	playerName := g.ui.ReadPlayerName()
+	g.networkMgr.JoinNotify = make(chan int32, 1)
 	err := g.networkMgr.SendJoinRequest(proto.PlayerType_HUMAN, playerName, gameName, playerRole)
 	if err != nil {
 		fmt.Printf("Failed to send join request: %v\n", err)
 		return
 	}
 	fmt.Printf("Join request sent for game '%s'. Waiting for response...\n", gameName)
-	time.Sleep(3 * time.Second)
-	if g.networkMgr.GetID() != 0 {
+	select {
+	case playerID := <-g.networkMgr.JoinNotify:
 		g.renderer = graphics.NewRenderer(g.logic)
 		g.networkMgr.SetGameAnnouncement(targetGame)
-		fmt.Printf("Attempting to join as %s...\n", playerRole)
+		fmt.Printf("Successfully joined as %s! Player ID: %d\n", playerRole, playerID)
 		if err := ebiten.RunGame(g); err != nil {
 			log.Fatal(err)
 		}
-	} else {
-		return
+	case <-time.After(5 * time.Second):
+		fmt.Println("Join timeout: no response from game master")
 	}
+
+	g.networkMgr.JoinNotify = nil
 }
 
 func (g *Game) showGames() {

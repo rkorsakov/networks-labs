@@ -32,6 +32,7 @@ type Manager struct {
 	closeMutex     sync.Mutex
 	closeChan      chan struct{}
 	wg             sync.WaitGroup
+	JoinNotify     chan int32
 }
 
 type GameInfo struct {

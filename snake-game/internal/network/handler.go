@@ -98,6 +98,9 @@ func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
 	}
 	if msg.GetReceiverId() != 0 {
 		m.playerID = msg.GetReceiverId()
+		if m.JoinNotify != nil {
+			m.JoinNotify <- m.playerID
+		}
 		log.Printf("Successfully joined the game! Player ID: %d", m.playerID)
 	} else {
 		log.Printf("Received ACK for message seq %d from %s", msg.GetMsgSeq(), addr)
