@@ -51,38 +51,49 @@ func (am *ActivityManager) monitorActivity() {
 }
 
 func (am *ActivityManager) checkAndSendPings() {
-	am.mu.RLock()
-	defer am.mu.RUnlock()
 
+	am.mu.RLock()
 	now := time.Now()
 	pingThreshold := time.Duration(am.stateDelayMs) * time.Millisecond / 10
+	nodesToPing := make([]string, 0)
 
 	for addrStr, lastSent := range am.lastSent {
 		if now.Sub(lastSent) > pingThreshold {
-			addr, err := net.ResolveUDPAddr("udp", addrStr)
-			if err == nil {
-				go am.manager.sendPing(addr)
-				go am.RecordMessageSent(addr)
-			}
+			nodesToPing = append(nodesToPing, addrStr)
+		}
+	}
+	am.mu.RUnlock()
+
+	for _, addrStr := range nodesToPing {
+		addr, err := net.ResolveUDPAddr("udp", addrStr)
+		if err == nil {
+
+			am.RecordMessageSent(addr)
+			go am.manager.sendPing(addr)
 		}
 	}
 }
 
 func (am *ActivityManager) checkTimeouts() {
-	am.mu.RLock()
-	defer am.mu.RUnlock()
 
+	am.mu.RLock()
 	now := time.Now()
 	timeoutThreshold := time.Duration(float64(am.stateDelayMs)*0.8) * time.Millisecond
+	timedOutNodes := make([]string, 0)
 
 	for addrStr, lastRecv := range am.lastRecv {
 		if now.Sub(lastRecv) > timeoutThreshold {
-			addr, err := net.ResolveUDPAddr("udp", addrStr)
-			if err == nil {
-				go am.manager.handleNodeTimeout(addr)
-				delete(am.lastRecv, addrStr)
-				delete(am.lastSent, addrStr)
-			}
+			timedOutNodes = append(timedOutNodes, addrStr)
+		}
+	}
+	am.mu.RUnlock()
+
+	for _, addrStr := range timedOutNodes {
+		addr, err := net.ResolveUDPAddr("udp", addrStr)
+		if err == nil {
+
+			am.RemoveNode(addr)
+			go am.manager.handleNodeTimeout(addr)
 		}
 	}
 }
@@ -90,7 +101,6 @@ func (am *ActivityManager) checkTimeouts() {
 func (am *ActivityManager) RecordMessageSent(addr *net.UDPAddr) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
-
 	addrStr := addr.String()
 	am.lastSent[addrStr] = time.Now()
 }
@@ -116,8 +126,8 @@ func (am *ActivityManager) RemoveNode(addr *net.UDPAddr) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 	addrStr := addr.String()
-	delete(am.lastSent, addrStr)
 	delete(am.lastRecv, addrStr)
+	delete(am.lastSent, addrStr)
 }
 
 func (am *ActivityManager) Close() {
