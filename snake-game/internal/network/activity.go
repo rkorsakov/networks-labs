@@ -51,7 +51,6 @@ func (am *ActivityManager) monitorActivity() {
 }
 
 func (am *ActivityManager) checkAndSendPings() {
-
 	am.mu.RLock()
 	now := time.Now()
 	pingThreshold := time.Duration(am.stateDelayMs) * time.Millisecond / 10
@@ -75,7 +74,6 @@ func (am *ActivityManager) checkAndSendPings() {
 }
 
 func (am *ActivityManager) checkTimeouts() {
-
 	am.mu.RLock()
 	now := time.Now()
 	timeoutThreshold := time.Duration(float64(am.stateDelayMs)*0.8) * time.Millisecond
