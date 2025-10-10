@@ -61,8 +61,8 @@ func (am *ActivityManager) checkAndSendPings() {
 		if now.Sub(lastSent) > pingThreshold {
 			addr, err := net.ResolveUDPAddr("udp", addrStr)
 			if err == nil {
-				am.manager.sendPing(addr)
-				am.RecordMessageSent(addr)
+				go am.manager.sendPing(addr)
+				go am.RecordMessageSent(addr)
 			}
 		}
 	}
@@ -79,7 +79,7 @@ func (am *ActivityManager) checkTimeouts() {
 		if now.Sub(lastRecv) > timeoutThreshold {
 			addr, err := net.ResolveUDPAddr("udp", addrStr)
 			if err == nil {
-				am.manager.handleNodeTimeout(addr)
+				go am.manager.handleNodeTimeout(addr)
 				delete(am.lastRecv, addrStr)
 				delete(am.lastSent, addrStr)
 			}
