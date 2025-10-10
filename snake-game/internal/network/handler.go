@@ -16,6 +16,14 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		log.Printf("Error unmarshaling message: %v", err)
 		return
 	}
+	shouldTrackActivity := true
+	switch {
+	case msg.GetAnnouncement() != nil, msg.GetDiscover() != nil:
+		shouldTrackActivity = false
+	}
+	if shouldTrackActivity {
+		m.activityManager.RecordMessageReceived(addr)
+	}
 	switch {
 	case msg.GetPing() != nil:
 		m.handlePing(&msg, addr)
