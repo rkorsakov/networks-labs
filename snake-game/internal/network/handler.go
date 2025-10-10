@@ -10,7 +10,6 @@ import (
 )
 
 func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
-	m.activityManager.RecordMessageReceived(addr)
 	var msg prt.GameMessage
 	if err := proto.Unmarshal(data, &msg); err != nil {
 		log.Printf("Error unmarshaling message: %v", err)
