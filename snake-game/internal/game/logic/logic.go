@@ -68,9 +68,6 @@ func (gl *GameLogic) moveSnakes() {
 }
 
 func (gl *GameLogic) moveSnake(snake *proto.GameState_Snake) {
-	if snake.State != proto.GameState_Snake_ALIVE {
-		return
-	}
 
 	newHead := &proto.GameState_Coord{
 		X: snake.Points[0].X,
@@ -246,9 +243,6 @@ func (gl *GameLogic) SteerSnake(playerID int32, direction proto.Direction) error
 	snake := gl.GetSnakeByPlayerID(playerID)
 	if snake == nil {
 		return fmt.Errorf("snake for player %d not found", playerID)
-	}
-	if snake.State != proto.GameState_Snake_ALIVE {
-		return fmt.Errorf("snake is ZOMBIE")
 	}
 	gl.pendingSteers[playerID] = direction
 	return nil
