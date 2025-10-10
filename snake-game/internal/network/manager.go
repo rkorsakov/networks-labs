@@ -15,23 +15,24 @@ const (
 )
 
 type Manager struct {
-	unicastConn    *net.UDPConn
-	multicastConn  *net.UDPConn
-	role           prt.NodeRole
-	msgSeq         int64
-	gameAnnounce   *prt.GameAnnouncement
-	ui             *ui.ConsoleUI
-	announceTicker *time.Ticker
-	gameListener   interfaces.GameAnnouncementListener
-	stateListener  interfaces.GameStateListener
-	joinListener   interfaces.GameJoinListener
-	steerListener  interfaces.SteerListener
-	AvailableGames map[string]*GameInfo
-	playerID       int32
-	mu             sync.Mutex
-	closeChan      chan struct{}
-	wg             sync.WaitGroup
-	JoinNotify     chan int32
+	unicastConn     *net.UDPConn
+	multicastConn   *net.UDPConn
+	role            prt.NodeRole
+	msgSeq          int64
+	gameAnnounce    *prt.GameAnnouncement
+	ui              *ui.ConsoleUI
+	announceTicker  *time.Ticker
+	gameListener    interfaces.GameAnnouncementListener
+	stateListener   interfaces.GameStateListener
+	joinListener    interfaces.GameJoinListener
+	steerListener   interfaces.SteerListener
+	AvailableGames  map[string]*GameInfo
+	playerID        int32
+	mu              sync.Mutex
+	closeChan       chan struct{}
+	wg              sync.WaitGroup
+	JoinNotify      chan int32
+	activityManager *ActivityManager
 }
 
 type GameInfo struct {
@@ -47,6 +48,10 @@ func NewNetworkManager(role prt.NodeRole, gameAnnounce *prt.GameAnnouncement) *M
 		ui:           ui.NewConsoleUI(),
 		closeChan:    make(chan struct{}),
 	}
+}
+
+func (m *Manager) SetActivityManager(stateDelayMs int32) {
+	m.activityManager = NewActivityManager(stateDelayMs, m)
 }
 
 func (m *Manager) SetGameAnnouncementListener(listener interfaces.GameAnnouncementListener) {

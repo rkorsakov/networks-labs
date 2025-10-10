@@ -216,6 +216,7 @@ func (g *Game) startNewGame() {
 	}
 	g.logic.Init()
 	g.networkMgr.ChangeRole(proto.NodeRole_MASTER, gameAnnounce)
+	g.networkMgr.SetActivityManager(gameAnnounce.Config.GetStateDelayMs())
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
@@ -248,6 +249,7 @@ func (g *Game) joinGame() {
 	case playerID := <-g.networkMgr.JoinNotify:
 		g.renderer = graphics.NewRenderer(g.logic)
 		g.networkMgr.SetGameAnnouncement(targetGame)
+		g.networkMgr.SetActivityManager(targetGame.Config.GetStateDelayMs())
 		fmt.Printf("Successfully joined as %s! Player ID: %d\n", playerRole, playerID)
 		if err := ebiten.RunGame(g); err != nil {
 			log.Fatal(err)

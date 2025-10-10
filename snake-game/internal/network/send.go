@@ -9,9 +9,24 @@ import (
 	"strconv"
 )
 
+func (m *Manager) SendUnicastMessage(data []byte, addr *net.UDPAddr) error {
+	m.activityManager.RecordMessageSent(addr)
+	_, err := m.unicastConn.WriteToUDP(data, addr)
+	return err
+}
+
 func (m *Manager) SendJoinRequest(playerType prt.PlayerType, playerName string, gameName string, role prt.NodeRole) error {
-	gameInfo, _ := m.AvailableGames[gameName]
-	joinMsg := &prt.GameMessage_JoinMsg{PlayerType: playerType, PlayerName: playerName, GameName: gameName, RequestedRole: role}
+	gameInfo, exists := m.AvailableGames[gameName]
+	if !exists {
+		return fmt.Errorf("game %s not found", gameName)
+	}
+
+	joinMsg := &prt.GameMessage_JoinMsg{
+		PlayerType:    playerType,
+		PlayerName:    playerName,
+		GameName:      gameName,
+		RequestedRole: role,
+	}
 	msg := &prt.GameMessage{
 		MsgSeq: m.msgSeq,
 		Type: &prt.GameMessage_Join{
@@ -21,12 +36,13 @@ func (m *Manager) SendJoinRequest(playerType prt.PlayerType, playerName string, 
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshaling join message: %v", err)
-
 	}
-	_, err = m.unicastConn.WriteToUDP(data, gameInfo.MasterAddr)
+
+	err = m.SendUnicastMessage(data, gameInfo.MasterAddr)
 	if err != nil {
 		return fmt.Errorf("sending join request: %v", err)
 	}
+
 	m.msgSeq++
 	log.Printf("Join request sent to %s for game: %s, role: %v",
 		gameInfo.MasterAddr, gameName, role)
@@ -51,6 +67,7 @@ func (m *Manager) sendAnnouncement() {
 		log.Printf("Error marshaling message: %v", err)
 		return
 	}
+
 	groupAddr, _ := net.ResolveUDPAddr("udp", multicastAddr)
 	_, err = m.multicastConn.WriteToUDP(data, groupAddr)
 	if err != nil {
@@ -68,28 +85,31 @@ func (m *Manager) SendState(gameState *prt.GameState) error {
 	}
 	data, err := proto.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling message: %v", err)
+		return fmt.Errorf("error marshaling state message: %v", err)
 	}
-	var playerAddr *net.UDPAddr
+
 	for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
 		if player.GetId() == m.playerID {
 			continue
 		}
 		port := strconv.Itoa(int(player.GetPort()))
-		playerAddr, err = net.ResolveUDPAddr("udp", net.JoinHostPort(player.IpAddress, port))
+		playerAddr, err := net.ResolveUDPAddr("udp", net.JoinHostPort(player.IpAddress, port))
 		if err != nil {
 			log.Printf("Error resolving player address: %v", err)
+			continue
 		}
-		_, err := m.unicastConn.WriteToUDP(data, playerAddr)
+
+		err = m.SendUnicastMessage(data, playerAddr)
 		if err != nil {
-			log.Printf("Error sending state: %v", err)
+			log.Printf("Error sending state to player %d: %v", player.GetId(), err)
 		}
-		m.msgSeq++
 	}
+
+	m.msgSeq++
 	return nil
 }
 
-func (m *Manager) SendSteer(dir prt.Direction) {
+func (m *Manager) SendSteer(dir prt.Direction) error {
 	steerMsg := &prt.GameMessage_SteerMsg{Direction: dir}
 	msg := &prt.GameMessage{
 		MsgSeq:   m.msgSeq,
@@ -98,12 +118,63 @@ func (m *Manager) SendSteer(dir prt.Direction) {
 	}
 	data, err := proto.Marshal(msg)
 	if err != nil {
-		log.Printf("Error marshaling message: %v", err)
+		return fmt.Errorf("error marshaling steer message: %v", err)
 	}
-	gameInfo, _ := m.AvailableGames[m.gameAnnounce.GameName]
-	_, err = m.unicastConn.WriteToUDP(data, gameInfo.MasterAddr)
+
+	gameInfo, exists := m.AvailableGames[m.gameAnnounce.GameName]
+	if !exists {
+		return fmt.Errorf("game info not found")
+	}
+
+	err = m.SendUnicastMessage(data, gameInfo.MasterAddr)
 	if err != nil {
-		log.Printf("Error sending steer: %v", err)
+		return fmt.Errorf("error sending steer: %v", err)
 	}
+
 	m.msgSeq++
+	return nil
+}
+
+func (m *Manager) sendPing(addr *net.UDPAddr) error {
+	pingMsg := &prt.GameMessage_PingMsg{}
+	msg := &prt.GameMessage{
+		MsgSeq: m.msgSeq,
+		Type:   &prt.GameMessage_Ping{Ping: pingMsg},
+	}
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("marshaling ping message: %v", err)
+	}
+
+	err = m.SendUnicastMessage(data, addr)
+	if err != nil {
+		return fmt.Errorf("sending ping: %v", err)
+	}
+
+	m.msgSeq++
+	log.Printf("Sent PING to %s", addr)
+	return nil
+}
+
+func (m *Manager) SendAck(msgSeq int64, receiverId int32, addr *net.UDPAddr) error {
+	ackMsg := &prt.GameMessage_AckMsg{}
+	msg := &prt.GameMessage{
+		MsgSeq:     msgSeq,
+		ReceiverId: receiverId,
+		Type:       &prt.GameMessage_Ack{Ack: ackMsg},
+	}
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("marshaling ack message: %v", err)
+	}
+
+	err = m.SendUnicastMessage(data, addr)
+	if err != nil {
+		return fmt.Errorf("sending ack: %v", err)
+	}
+
+	log.Printf("Sent ACK for message seq %d to %s", msgSeq, addr)
+	return nil
 }

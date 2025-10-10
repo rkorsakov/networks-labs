@@ -10,6 +10,7 @@ import (
 )
 
 func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
+	m.activityManager.RecordMessageReceived(addr)
 	var msg prt.GameMessage
 	if err := proto.Unmarshal(data, &msg); err != nil {
 		log.Printf("Error unmarshaling message: %v", err)
@@ -102,6 +103,7 @@ func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
+	m.activityManager.AddNodeToMonitor(addr)
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
