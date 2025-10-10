@@ -28,7 +28,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handlePing(&msg, addr)
 
 	case msg.GetSteer() != nil:
-		m.handleSteer(&msg, addr)
+		m.handleSteer(&msg)
 
 	case msg.GetAck() != nil:
 		m.handleAck(&msg, addr)
@@ -58,7 +58,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 
 func (m *Manager) handlePing(msg *prt.GameMessage, addr *net.UDPAddr) {}
 
-func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleSteer(msg *prt.GameMessage) {
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
