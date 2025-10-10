@@ -235,6 +235,7 @@ func (g *Game) joinGame() {
 		fmt.Println("Game not found")
 		return
 	}
+	g.networkMgr.SetActivityManager(targetGame.Config.GetStateDelayMs())
 	cfg := targetGame.Config
 	g.logic = logic.NewGameLogic(cfg)
 	playerName := g.ui.ReadPlayerName()
@@ -249,7 +250,6 @@ func (g *Game) joinGame() {
 	case playerID := <-g.networkMgr.JoinNotify:
 		g.renderer = graphics.NewRenderer(g.logic)
 		g.networkMgr.SetGameAnnouncement(targetGame)
-		g.networkMgr.SetActivityManager(targetGame.Config.GetStateDelayMs())
 		fmt.Printf("Successfully joined as %s! Player ID: %d\n", playerRole, playerID)
 		if err := ebiten.RunGame(g); err != nil {
 			log.Fatal(err)
