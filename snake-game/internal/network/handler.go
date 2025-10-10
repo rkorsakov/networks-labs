@@ -88,10 +88,6 @@ func (m *Manager) handleSteer(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleAck(msg *prt.GameMessage, addr *net.UDPAddr) {
-	m.playerID = msg.GetReceiverId()
-	if m.msgSeq != msg.MsgSeq {
-		return
-	}
 	ackMsg := msg.GetAck()
 	if ackMsg == nil {
 		return
