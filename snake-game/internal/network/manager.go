@@ -29,7 +29,6 @@ type Manager struct {
 	AvailableGames map[string]*GameInfo
 	playerID       int32
 	mu             sync.Mutex
-	closeMutex     sync.Mutex
 	closeChan      chan struct{}
 	wg             sync.WaitGroup
 	JoinNotify     chan int32
@@ -175,8 +174,8 @@ func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnounceme
 }
 
 func (m *Manager) Close() {
-	m.closeMutex.Lock()
-	defer m.closeMutex.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	close(m.closeChan)
 	if m.announceTicker != nil {
 		m.announceTicker.Stop()

@@ -17,14 +17,12 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 	}
 	switch {
 	case msg.GetPing() != nil:
-		log.Println("Got PING message")
 		m.handlePing(&msg, addr)
 
 	case msg.GetSteer() != nil:
 		m.handleSteer(&msg, addr)
 
 	case msg.GetAck() != nil:
-		log.Println("Got ACK message")
 		m.handleAck(&msg, addr)
 
 	case msg.GetState() != nil:
@@ -34,18 +32,15 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handleAnnouncement(&msg, addr)
 
 	case msg.GetJoin() != nil:
-		log.Println("Got JOIN message")
 		m.handleJoin(&msg, addr)
 
 	case msg.GetError() != nil:
 		m.handleError(&msg)
 
 	case msg.GetRoleChange() != nil:
-		log.Println("Got ROLE_CHANGE message")
 		m.handleRoleChange(&msg, addr)
 
 	case msg.GetDiscover() != nil:
-		log.Println("Got DISCOVER message")
 		m.handleDiscovery(&msg, addr)
 
 	default:
