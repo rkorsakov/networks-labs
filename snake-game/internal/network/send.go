@@ -10,7 +10,9 @@ import (
 )
 
 func (m *Manager) SendUnicastMessage(data []byte, addr *net.UDPAddr) error {
-	m.activityManager.RecordMessageSent(addr)
+	if m.activityManager != nil {
+		m.activityManager.RecordMessageSent(addr)
+	}
 	_, err := m.unicastConn.WriteToUDP(data, addr)
 	return err
 }
