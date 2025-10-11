@@ -215,7 +215,8 @@ func (g *Game) startNewGame() {
 		CanJoin:  true,
 	}
 	g.logic.Init()
-	g.networkMgr.ChangeRole(proto.NodeRole_MASTER, gameAnnounce)
+	g.networkMgr.ChangeRole(g.logic.GetPlayers().GetPlayers()[0], proto.NodeRole_MASTER)
+	g.networkMgr.SetGameAnnouncement(gameAnnounce)
 	g.networkMgr.SetActivityManager(gameAnnounce.Config.GetStateDelayMs())
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)

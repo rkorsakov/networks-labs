@@ -9,6 +9,8 @@ import (
 	prt "snake-game/internal/proto/gen"
 )
 
+var firstPlayer = true
+
 func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 	var msg prt.GameMessage
 	if err := proto.Unmarshal(data, &msg); err != nil {
@@ -46,7 +48,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 		m.handleError(&msg)
 
 	case msg.GetRoleChange() != nil:
-		m.handleRoleChange(&msg, addr)
+		m.handleRoleChange(&msg)
 
 	case msg.GetDiscover() != nil:
 		m.handleDiscovery(&msg, addr)
@@ -148,7 +150,17 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		}
 		newPlayerID = logic.GeneratePlayerID()
 	}
-	player := &prt.GamePlayer{Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port)}
+	var player *prt.GamePlayer
+	if firstPlayer {
+		player = &prt.GamePlayer{
+			Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: prt.NodeRole_DEPUTY, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port),
+		}
+		firstPlayer = false
+	} else {
+		player = &prt.GamePlayer{
+			Name: joinMsg.PlayerName, Id: newPlayerID, Type: joinMsg.PlayerType, Role: joinMsg.RequestedRole, Score: 0, IpAddress: addr.IP.String(), Port: int32(addr.Port),
+		}
+	}
 	m.joinListener.OnGameAddPlayer(player)
 	message := &prt.GameMessage{MsgSeq: msg.GetMsgSeq(), Type: &prt.GameMessage_Ack{Ack: ackMsg}, ReceiverId: newPlayerID}
 	data, err := proto.Marshal(message)
@@ -190,5 +202,18 @@ func (m *Manager) handleError(msg *prt.GameMessage) {
 	fmt.Println(msg.GetError())
 }
 
-func (m *Manager) handleRoleChange(msg *prt.GameMessage, addr *net.UDPAddr) {
+func (m *Manager) handleRoleChange(msg *prt.GameMessage) {
+	roleChangeMsg := msg.GetRoleChange()
+	if roleChangeMsg == nil {
+		return
+	}
+	receiverRole := roleChangeMsg.GetReceiverRole()
+	var ourPlayer *prt.GamePlayer
+	for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
+		if player.GetId() == m.playerID {
+			ourPlayer = player
+			break
+		}
+	}
+	m.ChangeRole(ourPlayer, receiverRole)
 }

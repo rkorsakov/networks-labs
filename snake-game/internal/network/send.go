@@ -180,3 +180,75 @@ func (m *Manager) SendAck(msgSeq int64, receiverId int32, addr *net.UDPAddr) err
 	log.Printf("Sent ACK for message seq %d to %s", msgSeq, addr)
 	return nil
 }
+
+func (m *Manager) sendRoleChangeMessage(player *prt.GamePlayer, newRole prt.NodeRole) {
+	roleChangeMsg := &prt.GameMessage_RoleChangeMsg{
+		SenderRole:   m.role,
+		ReceiverRole: newRole,
+	}
+
+	msg := &prt.GameMessage{
+		MsgSeq:     m.msgSeq,
+		SenderId:   m.playerID,
+		ReceiverId: player.GetId(),
+		Type:       &prt.GameMessage_RoleChange{RoleChange: roleChangeMsg},
+	}
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshaling role change message: %v", err)
+		return
+	}
+
+	playerAddr, err := net.ResolveUDPAddr("udp",
+		net.JoinHostPort(player.GetIpAddress(), strconv.Itoa(int(player.GetPort()))))
+	if err != nil {
+		log.Printf("Error resolving player address: %v", err)
+		return
+	}
+
+	err = m.SendUnicastMessage(data, playerAddr)
+	if err != nil {
+		log.Printf("Error sending role change message: %v", err)
+		return
+	}
+
+	log.Printf("Sent role change message to player %s, new role: %v", player.GetName(), newRole)
+	m.msgSeq++
+}
+
+func (m *Manager) broadcastNewMaster() {
+	for _, player := range m.gameAnnounce.GetPlayers().GetPlayers() {
+		if player.Role == prt.NodeRole_VIEWER || player.Id == m.playerID {
+			continue
+		}
+		roleChangeMsg := &prt.GameMessage_RoleChangeMsg{
+			SenderRole:   prt.NodeRole_MASTER,
+			ReceiverRole: player.Role,
+		}
+		msg := &prt.GameMessage{
+			MsgSeq:     m.msgSeq,
+			SenderId:   m.playerID,
+			ReceiverId: player.Id,
+			Type:       &prt.GameMessage_RoleChange{RoleChange: roleChangeMsg},
+		}
+		data, err := proto.Marshal(msg)
+		if err != nil {
+			log.Printf("Error marshaling new master announcement: %v", err)
+			continue
+		}
+		playerAddr, err := net.ResolveUDPAddr("udp",
+			net.JoinHostPort(player.IpAddress, strconv.Itoa(int(player.Port))))
+		if err != nil {
+			log.Printf("Error resolving player address: %v", err)
+			continue
+		}
+		err = m.SendUnicastMessage(data, playerAddr)
+		if err != nil {
+			log.Printf("Error sending new master announcement: %v", err)
+			continue
+		}
+		m.msgSeq++
+	}
+	log.Printf("Broadcasted new master announcement to all players")
+}

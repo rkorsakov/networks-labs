@@ -23,9 +23,68 @@ func (m *Manager) handleNodeTimeout(addr *net.UDPAddr) {
 	}
 	switch m.role {
 	case prt.NodeRole_MASTER:
-		m.Kill(timedOutPlayer)
+		m.handleMasterTimeout(timedOutPlayer)
 	case prt.NodeRole_DEPUTY:
+		m.handleDeputyTimeout(timedOutPlayer)
 	case prt.NodeRole_NORMAL:
+		m.handleNormalTimeout(timedOutPlayer)
+	}
+}
 
+func (m *Manager) handleMasterTimeout(player *prt.GamePlayer) {
+	if player.Role == prt.NodeRole_DEPUTY {
+		var newDeputy *prt.GamePlayer
+		for _, p := range m.gameAnnounce.GetPlayers().GetPlayers() {
+			if p.Id != player.Id && p.Role == prt.NodeRole_NORMAL {
+				newDeputy = p
+				break
+			}
+		}
+		if newDeputy != nil {
+			m.sendRoleChangeMessage(newDeputy, prt.NodeRole_DEPUTY)
+		}
+	}
+	m.sendRoleChangeMessage(player, prt.NodeRole_VIEWER)
+	m.Kill(player)
+}
+
+func (m *Manager) handleDeputyTimeout(player *prt.GamePlayer) {
+	if player.Role == prt.NodeRole_MASTER {
+		m.ChangeRole(player, prt.NodeRole_MASTER)
+		var newDeputy *prt.GamePlayer
+		for _, p := range m.gameAnnounce.GetPlayers().GetPlayers() {
+			if p.Role == prt.NodeRole_NORMAL {
+				newDeputy = p
+				break
+			}
+		}
+		if newDeputy != nil {
+			m.sendRoleChangeMessage(newDeputy, prt.NodeRole_DEPUTY)
+		}
+		m.broadcastNewMaster()
+	}
+}
+
+func (m *Manager) handleNormalTimeout(player *prt.GamePlayer) {
+	if player.Role == prt.NodeRole_MASTER {
+		var deputy *prt.GamePlayer
+		for _, p := range m.gameAnnounce.GetPlayers().GetPlayers() {
+			if p.Role == prt.NodeRole_DEPUTY {
+				deputy = p
+				break
+			}
+		}
+		if deputy != nil {
+			for _, gameInfo := range m.AvailableGames {
+				if gameInfo.Announcement.GameName == m.gameAnnounce.GameName {
+					deputyAddr, err := net.ResolveUDPAddr("udp",
+						net.JoinHostPort(deputy.IpAddress, strconv.Itoa(int(deputy.Port))))
+					if err == nil {
+						gameInfo.MasterAddr = deputyAddr
+					}
+					break
+				}
+			}
+		}
 	}
 }

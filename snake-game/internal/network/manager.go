@@ -165,11 +165,13 @@ func (m *Manager) listenForMulticast() {
 	}
 }
 
-func (m *Manager) ChangeRole(role prt.NodeRole, announcement *prt.GameAnnouncement) {
+func (m *Manager) ChangeRole(player *prt.GamePlayer, role prt.NodeRole) {
 	m.role = role
-	m.gameAnnounce = announcement
-	gp := announcement.GetPlayers().GetPlayers()[0]
-	m.playerID = gp.Id
+	for _, p := range m.gameAnnounce.GetPlayers().GetPlayers() {
+		if p.Id == player.Id {
+			p.Role = role
+		}
+	}
 	if role == prt.NodeRole_MASTER {
 		m.startAnnouncementBroadcast()
 	} else if m.announceTicker != nil {
