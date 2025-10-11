@@ -204,10 +204,7 @@ func (m *Manager) SetGameAnnouncement(gameAnnounce *prt.GameAnnouncement) {
 
 func (m *Manager) Kill(player *prt.GamePlayer) {
 	if m.joinListener != nil {
-		if game, ok := m.joinListener.(interface {
-			KillPlayer(playerID int32)
-		}); ok {
-			game.KillPlayer(player.Id)
-		}
+		logic := m.joinListener.GetLogic()
+		logic.KillPlayer(player.Id)
 	}
 }

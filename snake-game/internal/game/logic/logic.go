@@ -228,12 +228,6 @@ func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
 }
 
 func (gl *GameLogic) KillPlayer(playerID int32) {
-	for i, player := range gl.state.Players.Players {
-		if player.Id == playerID {
-			gl.state.Players.Players = append(gl.state.Players.Players[:i], gl.state.Players.Players[i+1:]...)
-			break
-		}
-	}
 	if snake := gl.GetSnakeByPlayerID(playerID); snake != nil {
 		snake.State = proto.GameState_Snake_ZOMBIE
 	}
