@@ -167,6 +167,7 @@ func (m *Manager) listenForMulticast() {
 
 func (m *Manager) ChangeRole(player *prt.GamePlayer, role prt.NodeRole) {
 	m.role = role
+	m.playerID = player.Id
 	for _, p := range m.gameAnnounce.GetPlayers().GetPlayers() {
 		if p.Id == player.Id {
 			p.Role = role
