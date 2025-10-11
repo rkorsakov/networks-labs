@@ -20,7 +20,7 @@ func (m *Manager) handleMessage(data []byte, addr *net.UDPAddr) {
 	case msg.GetAnnouncement() != nil, msg.GetDiscover() != nil:
 		shouldTrackActivity = false
 	}
-	if shouldTrackActivity {
+	if shouldTrackActivity && m.activityManager != nil {
 		m.activityManager.RecordMessageReceived(addr)
 	}
 	switch {
