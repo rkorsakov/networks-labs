@@ -222,7 +222,7 @@ func (gl *GameLogic) isPositionOccupied(coord *proto.GameState_Coord) bool {
 
 func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
 	gl.state.Players.Players = append(gl.state.Players.Players, player)
-	if player.Role == proto.NodeRole_NORMAL || player.Role == proto.NodeRole_MASTER {
+	if player.Role != proto.NodeRole_VIEWER {
 		gl.placeSnake(player)
 	}
 }
