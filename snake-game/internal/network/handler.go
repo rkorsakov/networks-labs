@@ -110,7 +110,6 @@ func (m *Manager) handleDiscovery(msg *prt.GameMessage, addr *net.UDPAddr) {
 }
 
 func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
-	m.activityManager.AddNodeToMonitor(addr)
 	if m.role != prt.NodeRole_MASTER {
 		return
 	}
@@ -136,6 +135,7 @@ func (m *Manager) handleJoin(msg *prt.GameMessage, addr *net.UDPAddr) {
 		}
 		return
 	}
+	m.activityManager.AddNodeToMonitor(addr)
 	ackMsg := &prt.GameMessage_AckMsg{}
 	ids := make(map[int32]struct{})
 	for _, val := range m.gameAnnounce.GetPlayers().Players {
