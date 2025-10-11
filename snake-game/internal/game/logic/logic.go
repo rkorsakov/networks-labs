@@ -227,7 +227,7 @@ func (gl *GameLogic) AddPlayer(player *proto.GamePlayer) {
 	}
 }
 
-func (gl *GameLogic) RemovePlayer(playerID int32) {
+func (gl *GameLogic) KillPlayer(playerID int32) {
 	for i, player := range gl.state.Players.Players {
 		if player.Id == playerID {
 			gl.state.Players.Players = append(gl.state.Players.Players[:i], gl.state.Players.Players[i+1:]...)

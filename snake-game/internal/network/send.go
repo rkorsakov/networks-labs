@@ -153,7 +153,7 @@ func (m *Manager) sendPing(addr *net.UDPAddr) error {
 	}
 
 	m.msgSeq++
-	log.Printf("Sent PING to %s", addr)
+	//log.Printf("Sent PING to %s", addr)
 	return nil
 }
 

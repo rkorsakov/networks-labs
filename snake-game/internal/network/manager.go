@@ -201,3 +201,13 @@ func (m *Manager) GetID() int32 {
 func (m *Manager) SetGameAnnouncement(gameAnnounce *prt.GameAnnouncement) {
 	m.gameAnnounce = gameAnnounce
 }
+
+func (m *Manager) Kill(player *prt.GamePlayer) {
+	if m.joinListener != nil {
+		if game, ok := m.joinListener.(interface {
+			KillPlayer(playerID int32)
+		}); ok {
+			game.KillPlayer(player.Id)
+		}
+	}
+}
